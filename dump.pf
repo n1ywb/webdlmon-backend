@@ -1,0 +1,679 @@
+commandline &Literal{
+q3302orb -v -noipresolv -S state/q3302orb_prelim -pf q3302orb_prelim pretadata dataorb :prelim cmdorb :qcmd pocorb :poc}
+q3302orb.pf &Arr{
+ack_print_bit_flag yes
+acq_matrix &Tbl{
+s1   s1   0    0    s1   0    s1   0
+s1   s1   0    0    s1   0    s1   0
+s1   s1   0    0    s1   0    s1   0
+s1   s1   0    0    s1   0    s1   0
+s1   s1   0    0    s1   0    s1   0
+s1   s1   0    0    s1   0    s1   0
+}
+calibration_amplitude 2
+calibration_capacitive no
+calibration_duration 100
+calibration_monitor_channels 0x0
+calibration_period 1
+calibration_sensors AB
+calibration_settling_time 30
+calibration_trailer_time 100
+calibration_waveform step
+cmd_orbtag cmdorb
+commeff_interval 120.0
+config_orbtag dataorb
+control_inactivity_timeout 300
+datalogger_templates &Arr{
+az3c &Arr{
+acq_matrix &Tbl{
+
+
+m1   0    0    m40  0    0    0    0
+m1   0    0    m40  0    0    0    0
+m1   0    0    m40  0    0    0    0
+0    0    0    0    0    0    0    0
+0    0    0    0    0    0    0    0
+0    0    0    0    0    0    0    0
+}
+pchan_map &Arr{
+0 $DLNET_$DLSTA_HHR   	3.763676179577e-12	-1	w
+1 $DLNET_$DLSTA_HAN   	0.08986005	-1	n
+2 $DLNET_$DLSTA_HAE    	0.09474763	-1	n
+}
+}
+br6c &Arr{
+acq_matrix &Tbl{
+
+
+0    0    0    0    0    0    m200 0
+0    0    0    0    0    0    m200 0
+0    0    0    0    0    0    m200 0
+s1   0    0    mbb  0    mbb  0    0
+s1   0    0    mbb  0    mbb  0    0
+s1   0    0    mbb  0    mbb  0    0
+}
+}
+cascadia_bb100 &Arr{
+acq_matrix &Tbl{
+
+
+m1   0    0    m40  0    m100 0    0
+m1   0    0    m40  0    m100 0    0
+m1   0    0    m40  0    m100 0    0
+sm1   0    0    0    0    sm100 0    0
+sm1   0    0    0    0    sm100 0    0
+sm1   0    0    0    0    sm100 0    0
+}
+pchan_map &Arr{
+0 $DLNET_$DLSTA_HHZ         1.0	-1.0	V
+1 $DLNET_$DLSTA_HHN         1.0	-1.0	V
+2 $DLNET_$DLSTA_HHE         1.0	-1.0	V
+3 $DLNET_$DLSTA_HNZ         1.0   -1.0    A
+4 $DLNET_$DLSTA_HNN         1.0   -1.0    A
+5 $DLNET_$DLSTA_HNE         1.0   -1.0    A
+}
+}
+cascadia_epi &Arr{
+acq_matrix &Tbl{
+
+
+m1   0    0    m40  0    0    0    0
+m1   0    0    m40  0    0    0    0
+m1   0    0    m40  0    0    0    0
+sm1   0    0    0    0    sm100 0    0
+sm1   0    0    0    0    sm100 0    0
+sm1   0    0    0    0    sm100 0    0
+}
+pchan_map &Arr{
+0 $DLNET_$DLSTA_HHZ         1.0	-1.0	V
+1 $DLNET_$DLSTA_HHN         1.0	-1.0	V
+2 $DLNET_$DLSTA_HHE         1.0	-1.0	V
+3 $DLNET_$DLSTA_HNZ         1.0   -1.0    A
+4 $DLNET_$DLSTA_HNN         1.0   -1.0    A
+5 $DLNET_$DLSTA_HNE         1.0   -1.0    A
+}
+}
+usarray &Arr{
+acq_matrix &Tbl{
+
+
+m1   0    0    m40  0    0    0    0
+m1   0    0    m40  0    0    0    0
+m1   0    0    m40  0    0    0    0
+0    0    0    0    0    0    0    0
+0    0    0    0    0    0    0    0
+0    0    0    0    0    0    0    0
+}
+pchan_map &Arr{
+0 $DLNET_$DLSTA_HHZ         1.0	-1.0	V
+1 $DLNET_$DLSTA_HHN         1.0	-1.0	V
+2 $DLNET_$DLSTA_HHE         1.0	-1.0	V
+3 $DLNET_$DLSTA_HGZ         1.0   -1.0    A
+4 $DLNET_$DLSTA_HGN         1.0   -1.0    A
+5 $DLNET_$DLSTA_HGE         1.0   -1.0    A
+}
+}
+usarray2bb &Arr{
+acq_matrix &Tbl{
+
+
+m1   0    0    m40  0    0    0    0
+m1   0    0    m40  0    0    0    0
+m1   0    0    m40  0    0    0    0
+m1   0    0    m40  0    0    0    0
+m1   0    0    m40  0    0    0    0
+m1   0    0    m40  0    0    0    0
+}
+pchan_map &Arr{
+0 $DLNET_$DLSTA_HHZ         1.0	-1.0	V
+1 $DLNET_$DLSTA_HHN         1.0	-1.0	V
+2 $DLNET_$DLSTA_HHE         1.0	-1.0	V
+3 $DLNET_$DLSTA_HHZ_01      1.0   -1.0    V
+4 $DLNET_$DLSTA_HHN_01      1.0   -1.0    V
+5 $DLNET_$DLSTA_HHE_01      1.0   -1.0    V
+}
+}
+usarray_bb456 &Arr{
+acq_matrix &Tbl{
+
+
+0    0    0    0    0    0    0    0
+0    0    0    0    0    0    0    0
+0    0    0    0    0    0    0    0
+m1   0    0    m40  0    0    0    0
+m1   0    0    m40  0    0    0    0
+m1   0    0    m40  0    0    0    0
+}
+pchan_map &Arr{
+0 $DLNET_$DLSTA_HGZ         1.0   -1.0    A
+1 $DLNET_$DLSTA_HGN         1.0   -1.0    A
+2 $DLNET_$DLSTA_HGE         1.0   -1.0    A
+3 $DLNET_$DLSTA_HHZ         1.0	-1.0	V
+4 $DLNET_$DLSTA_HHN         1.0	-1.0	V
+5 $DLNET_$DLSTA_HHE         1.0	-1.0	V
+}
+}
+usarray_calib &Arr{
+acq_matrix &Tbl{
+
+
+m1   0    0    m40  0    0    m200 0
+m1   0    0    m40  0    0    m200 0
+m1   0    0    m40  0    0    m200 0
+0    0    0    0    0    0    0    0
+0    0    0    0    0    0    0    0
+0    0    0    0    0    0    0    0
+}
+pchan_map &Arr{
+0 $DLNET_$DLSTA_HHZ         1.0	-1.0	V
+1 $DLNET_$DLSTA_HHN         1.0	-1.0	V
+2 $DLNET_$DLSTA_HHE         1.0	-1.0	V
+3 $DLNET_$DLSTA_HGZ         1.0   -1.0    A
+4 $DLNET_$DLSTA_HGN         1.0   -1.0    A
+5 $DLNET_$DLSTA_HGE         1.0   -1.0    A
+}
+}
+usarray_ifs &Arr{
+acq_matrix &Tbl{
+
+
+i1   0    0    i40  0    0    0    0
+i1   0    0    i40  0    0    0    0
+i1   0    0    i40  0    0    0    0
+i1   0    0    i40  0    0    0    0
+i1   0    0    i40  0    0    0    0
+i1   0    0    i40  0    0    0    0
+}
+pchan_map &Arr{
+0 $DLNET_$DLSTA_BD1         1.0	-1.0	I
+1 $DLNET_$DLSTA_BD2         1.0	-1.0	I
+2 $DLNET_$DLSTA_BD3         1.0	-1.0	I
+3 $DLNET_$DLSTA_BD4         1.0   -1.0    I
+4 $DLNET_$DLSTA_BD5         1.0   -1.0    I
+5 $DLNET_$DLSTA_BD6         1.0   -1.0    I
+}
+}
+usarray_it &Arr{
+acq_matrix &Tbl{
+
+
+m1   0    0    m40  0    0    0    0
+m1   0    0    m40  0    0    0    0
+m1   0    0    m40  0    0    0    0
+0    0    0    0    0    0    0    0
+0    0    0    0    0    0    0    0
+0    0    0    0    0    0    0    0
+}
+inactivity_timeout 600.0
+pchan_map &Arr{
+0 $DLNET_$DLSTA_HHZ         1.0	-1.0	V
+1 $DLNET_$DLSTA_HHN         1.0	-1.0	V
+2 $DLNET_$DLSTA_HHE         1.0	-1.0	V
+3 $DLNET_$DLSTA_HGZ         1.0   -1.0    A
+4 $DLNET_$DLSTA_HGN         1.0   -1.0    A
+5 $DLNET_$DLSTA_HGE         1.0   -1.0    A
+}
+}
+y22e &Arr{
+acq_matrix &Tbl{
+
+
+m1   0    0    m40  0    0    0    0
+m1   0    0    m40  0    0    0    0
+m1   0    0    m40  0    0    0    0
+m1   0    0    m40  0    0    0    0
+m1   0    0    m40  0    0    0    0
+m1   0    0    m40  0    0    0    0
+}
+pchan_map &Arr{
+0 $DLNET_$DLSTA_BHZ         1.0	-1.0	V
+1 $DLNET_$DLSTA_BHN         1.0	-1.0	V
+2 $DLNET_$DLSTA_BHE         1.0	-1.0	V
+3 $DLNET_$DLSTA_BHZ_01      1.0   -1.0    V
+4 $DLNET_$DLSTA_BHN_01      1.0   -1.0    V
+5 $DLNET_$DLSTA_BHE_01      1.0   -1.0    V
+}
+}
+}
+dataloggers &Tbl{
+XX_PFO2         XX      PFO2    010000069A405663        172.23.34.44    1       az3c            startacq
+BB_TVZW		BB	TVZW	0100000B69AF5A42        -             	1	usarray    	startacq
+BB_TWIB		BB	TWIB	0100000B696DD674        -          	1	usarray  	startacq
+BB_TATT		BB	TATT	0100000FF61695A0        -              	1	usarray    	startacq
+BB_TVIE		BB	TVIE	0100000A27985AC9        -          	1	usarray  	startacq
+TA_D53A         TA      D53A    0100000B69860CD5        -               1       usarray   startacq
+TA_D54A         TA      D54A    0100000B6999CC59        -               1       usarray   startacq
+TA_E53A         TA      E53A    010000044D986711        -               1       usarray   startacq
+TA_E54A         TA      E54A    0100000B6502498D        -               1       usarray   startacq
+}
+datarate_interval 60.0
+db_orbtag dataorb
+debug_ack 0
+debug_control 0
+debug_data 0
+debug_startup 0
+debug_udp 0
+dptokens_port_4 qtpb14
+ep_disposition &Arr{
+ep1_an1_1 yes	ep1
+ep1_an1_10 no	0
+ep1_an1_20 no	0
+ep1_an1_40 yes	ep40
+ep1_an2_1 yes	ep1
+ep1_an2_10 no	0
+ep1_an2_20 no	0
+ep1_an2_40 yes	ep40
+ep1_an3_1 no	0
+ep1_an3_10 no	0
+ep1_an3_20 no	0
+ep1_an3_40 no	0
+ep1_int_hum yes	mep
+ep1_int_pres yes	mep
+ep1_int_temp yes	mep
+ep1_int_volt yes	mep
+ep1_pll_off yes	mep
+ep1_vco yes	mep
+ep1_wxt_hail yes     mep
+ep1_wxt_htmp yes     mep
+ep1_wxt_hum yes     mep
+ep1_wxt_hvlt yes     mep
+ep1_wxt_pres yes     mep
+ep1_wxt_rain yes     mep
+ep1_wxt_rvlt yes     mep
+ep1_wxt_svlt yes     mep
+ep1_wxt_temp yes     mep
+ep1_wxt_wdir yes     mep
+ep1_wxt_wspd yes     mep
+}
+ep_map &Arr{
+ep1_an1_1 03	e1bar	$DLNET_$DLSTA_LDO_EP	1	c	1.0		-1.0
+ep1_an1_10 02	e1a110	$DLNET_$DLSTA_AH1_EP	10	c	1.0		-1.0
+ep1_an1_20 01	e1a120	$DLNET_$DLSTA_AH1_EP	20	c	1.0		-1.0
+ep1_an1_40 00	e1a140	$DLNET_$DLSTA_BDO_EP	40	c	1.0		-1.0
+ep1_an2_1 07	e1mic	$DLNET_$DLSTA_LDF_EP	1	c	1.0		-1.0
+ep1_an2_10 06	e1e210	$DLNET_$DLSTA_AH2_EP	10	c	1.0		-1.0
+ep1_an2_20 05	e1a220	$DLNET_$DLSTA_AH2_EP	20	c	1.0		-1.0
+ep1_an2_40 04	e1a240	$DLNET_$DLSTA_BDF_EP	40	c	1.0		-1.0
+ep1_an3_1 0B	e1a31	$DLNET_$DLSTA_LDG_EP   	1	c	1.0		-1.0
+ep1_an3_10 0A	e1a310	$DLNET_$DLSTA_AH3_EP	10	c	1.0		-1.0
+ep1_an3_20 09	e1a320	$DLNET_$DLSTA_AH3_EP	20	c	1.0		-1.0
+ep1_an3_40 08	e1a340	$DLNET_$DLSTA_BDG_EP 	40	c	1.0		-1.0
+ep1_int_hum 12	e1ih	$DLNET_$DLSTA_LIM_EP	1	p	1.0		-1.0
+ep1_int_pres 10	e1ipr	$DLNET_$DLSTA_LDM_EP	1	P	0.001		-1.0
+ep1_int_temp 11	e1it	$DLNET_$DLSTA_LKM_EP	1	t	0.1		-1.0
+ep1_int_volt 13	e1iv	$DLNET_$DLSTA_LEP_EP	1	v	0.1		-1.0
+ep1_pll_off 14	e1pll	$DLNET_$DLSTA_LCE_EP	1	T	0.000001	-1.0
+ep1_vco 15	e1vco	$DLNET_$DLSTA_LCO_EP	1	c	1.0		-1.0
+ep1_wxt_hail 26      e1whi   $DLNET_$DLSTA_LRH_EP    1       c       1.0             -1.0
+ep1_wxt_htmp 27      e1wth   $DLNET_$DLSTA_LKH_EP    1       t       0.1             -1.0
+ep1_wxt_hum 24      e1wh    $DLNET_$DLSTA_LIO_EP    1       p       0.1             -1.0
+ep1_wxt_hvlt 28      e1wvh   $DLNET_$DLSTA_LEH_EP    1       v       0.1             -1.0
+ep1_wxt_pres 22      e1wpr   $DLNET_$DLSTA_LDV_EP    1       P       0.1             -1.0
+ep1_wxt_rain 25      e1wri   $DLNET_$DLSTA_LRO_EP    1       R       0.1             -1.0
+ep1_wxt_rvlt 2A      e1wvr   $DLNET_$DLSTA_LER_EP    1       v       0.001           -1.0
+ep1_wxt_svlt 29      e1wvs   $DLNET_$DLSTA_LEW_EP    1       v       0.1             -1.0
+ep1_wxt_temp 23      e1wt    $DLNET_$DLSTA_LKO_EP    1       t       0.1             -1.0
+ep1_wxt_wdir 20      e1wdr   $DLNET_$DLSTA_LWD_EP    1       a       1.0             -1.0
+ep1_wxt_wspd 21      e1wsp   $DLNET_$DLSTA_LWS_EP    1       s       0.1             -1.0
+}
+flush_buffer_age 0
+flush_buffer_thresh 0
+inactivity_timeout 1800.0
+local_port_base 27500
+local_port_control 0
+local_port_data 0
+log_orbtag dataorb
+masslockunlock_duration 8.0
+masslockunlock_sensors AB
+massrecenter_duration 8.0
+massrecenter_sensors AB
+maxretries_control 3
+maxretries_register 5
+output_time_packet no
+packet_defs &Arr{
+ep1 &Arr{
+data_orbtag dataorb
+multiplexed yes
+subcode EP1
+suffix MGENC
+twin 120
+}
+ep40 &Arr{
+data_orbtag dataorb
+multiplexed yes
+subcode EP40
+suffix MGENC
+twin 10
+}
+i1 &Arr{
+data_orbtag dataorb
+multiplexed yes
+subcode I1
+suffix MGENC
+twin 10
+}
+i40 &Arr{
+data_orbtag dataorb
+multiplexed yes
+subcode I40
+suffix MGENC
+twin 1
+}
+m1 &Arr{
+data_orbtag dataorb
+multiplexed yes
+subcode M1
+suffix MGENC
+twin 120
+}
+m100 &Arr{
+data_orbtag dataorb
+multiplexed yes
+subcode M100
+suffix MGENC
+twin 1
+}
+m200 &Arr{
+data_orbtag dataorb
+multiplexed yes
+subcode M200
+suffix MGENC
+twin 1
+}
+m40 &Arr{
+data_orbtag dataorb
+multiplexed yes
+subcode M40
+suffix MGENC
+twin 10
+}
+mbb &Arr{
+data_orbtag dataorb
+multiplexed yes
+subcode MBB
+suffix MGENC
+twin 1
+}
+mep &Arr{
+data_orbtag dataorb
+multiplexed yes
+subcode MEP
+suffix MGENC
+twin 10
+}
+mf &Arr{
+data_orbtag dataorb
+multiplexed yes
+subcode MF
+suffix MGENC
+twin 1
+}
+mst &Arr{
+data_orbtag dataorb
+multiplexed yes
+subcode MST
+suffix MGENC
+twin 300
+}
+mstc &Arr{
+data_orbtag dataorb
+multiplexed yes
+subcode MSTC
+suffix MGENC
+twin 300
+}
+mstd &Arr{
+data_orbtag dataorb
+multiplexed yes
+subcode MSTD
+suffix MGENC
+twin 300
+}
+mste &Arr{
+data_orbtag dataorb
+multiplexed yes
+subcode MSTE
+suffix MGENC
+twin 300
+}
+s1 &Arr{
+data_orbtag dataorb
+multiplexed no
+subcode 
+suffix GENC
+twin 1
+}
+s10 &Arr{
+data_orbtag dataorb
+multiplexed no
+subcode 
+suffix GENC
+twin 10
+}
+sm1 &Arr{
+data_orbtag dataorb
+multiplexed yes
+subcode SM1
+suffix MGENC
+twin 10
+}
+sm100 &Arr{
+data_orbtag dataorb
+multiplexed yes
+subcode SM100
+suffix MGENC
+twin 1
+}
+}
+pchan_map &Arr{
+0 $DLNET_$DLSTA_HGZ	2338.08	-1.0	A
+1 $DLNET_$DLSTA_HGN	2338.08	-1.0	A
+2 $DLNET_$DLSTA_HGE	2338.08	-1.0	A
+3 $DLNET_$DLSTA_HHZ	   0.0  -1.0    -
+4 $DLNET_$DLSTA_HHN	   0.0  -1.0    -
+5 $DLNET_$DLSTA_HHE	   0.0  -1.0    -
+}
+pf_revision_time 1189225826
+pfstatusreport_interval 60
+pfstatusreport_verbosity 0
+pocds &Tbl{
+pocorb	taacq/pf/poc
+pocorb	tabak/pf/poc
+pocorb dmcpocd/pf/poc
+}
+q330_authentication_code &Tbl{
+0000000000000000
+0000000000000037
+}
+q330_port_base 5330
+rate_mask &Arr{
+0 L..
+1 B..
+2 B..
+3 B..
+4 B..
+5 H..
+6 H..
+7 H..
+}
+register_retry_sleep 300
+shutdown_buffer_thresh 0.1
+shutdown_buffer_wait 15.0
+shutdown_timeout 0.0
+shutdown_wait_time 20.0
+status_disposition &Arr{
+data_anl_fault yes	no	0
+data_ant_curr no	yes	mst
+data_aux_chan0 no	no	mst
+data_aux_chan1 no	no	mst
+data_aux_chan2 no	no	mst
+data_aux_chan3 no	no	mst
+data_aux_chan4 no	no	mst
+data_aux_chan5 no	no	mst
+data_aux_chan6 no	no	mst
+data_aux_chan7 no	no	mst
+data_backup yes	no	0
+data_bati_volt no	no	0
+data_batt_cap yes	no	0
+data_batt_chg yes	no	0
+data_batt_curr no	no	0
+data_batt_dd yes	no	0
+data_batt_temp no	no	0
+data_batt_volt no	no	0
+data_cal_abort yes	no	0
+data_cal_error yes	yes	mst
+data_cal_status yes	yes	0
+data_clk_drift no	yes	mstd
+data_clk_lcq no	yes	mstd
+data_clk_ltc no	yes	mst
+data_clk_pll yes	yes	mst
+data_clk_qual yes	yes	mst
+data_cnp_err_code yes	no	0
+data_cnp_err_port yes	no	0
+data_dig_phase yes	no	0
+data_dig_phase_why yes	no	0
+data_gps yes	yes	0
+data_gps_cs yes	no	0
+data_leap yes	no	0
+data_m0 no	yes	mstd
+data_m1 no	yes	mstd
+data_m2 no	yes	mstd
+data_m3 no	yes	mstd
+data_m4 no	yes	mstd
+data_m5 no	yes	mstd
+data_opto_input yes	yes	mst
+data_pkt_buf no	yes	mst
+data_pll_drift yes	no	0
+data_por_drift yes	no	0
+data_pow_phase yes	no	0
+data_record yes	no	0
+data_seis0_temp no	no	0
+data_seis1_temp no	no	0
+data_serial_chan0 no      yes     mst
+data_serial_chan1 no      yes     mst
+data_serial_chan2 no      yes     mst
+data_serial_chan3 no      yes     mst
+data_slavep_err_code yes	no	0
+data_spare_anl no	no	0
+data_status_port no	no	0
+data_suppl_neg no	no	0
+data_suppl_pos no	no	0
+data_sys_curr no	yes	mst
+data_sys_temp no	yes	mstd
+data_sys_volt no	yes	mstd
+data_vco no	yes	mst
+q330_byts_rd24 no	yes	mstc
+q330_byts_wr24 no	yes	mstc
+q330_comm_eff no	yes	mstc
+q330_data_bufr no	yes	mstc
+q330_data_gaps yes	yes	mstc
+q330_data_gp1 yes	yes	mstc
+q330_data_gp24 yes	yes	mstc
+q330_data_ltc no	yes	mstc
+q330_data_ni24 no	yes	mstc
+q330_data_nl24 no	yes	mstc
+q330_data_np24 no	yes	mstc
+q330_data_nr24 yes	yes	mstc
+q330_data_tput no	yes	mstc
+q330_drate_tot no	yes	mstc
+q330_pkts_badsz yes	yes	0
+q330_pkts_chksm yes	yes	0
+q330_pkts_proc no	yes	0
+q330_run_time no	yes	mstc
+q330_throttle no	yes	mstc
+}
+status_map &Arr{
+data_anl_fault anlf
+data_ant_curr aa	$DLNET_$DLSTA_VEA
+data_aux_chan0 ax0	$DLNET_$DLSTA_AX0
+data_aux_chan1 ax1	$DLNET_$DLSTA_AX1
+data_aux_chan2 ax2	$DLNET_$DLSTA_AX2
+data_aux_chan3 ax3	$DLNET_$DLSTA_AX3
+data_aux_chan4 ax4	$DLNET_$DLSTA_AX4
+data_aux_chan5 ax5	$DLNET_$DLSTA_AX5
+data_aux_chan6 ax6	$DLNET_$DLSTA_AX6
+data_aux_chan7 ax7	$DLNET_$DLSTA_AX7
+data_backup bu
+data_bati_volt iv	$DLNET_$DLSTA_VIV
+data_batt_cap bc	$DLNET_$DLSTA_VBC
+data_batt_chg bg	$DLNET_$DLSTA_VBG
+data_batt_curr ba	$DLNET_$DLSTA_VBI
+data_batt_dd bd	$DLNET_$DLSTA_VBD
+data_batt_temp bt	$DLNET_$DLSTA_VBT
+data_batt_volt bv	$DLNET_$DLSTA_VBV
+data_cal_abort cala
+data_cal_error cale	$DLNET_$DLSTA_ADC
+data_cal_status cals
+data_clk_drift cld	$DLNET_$DLSTA_LCE
+data_clk_lcq lcq	$DLNET_$DLSTA_LCQ
+data_clk_ltc clt	$DLNET_$DLSTA_LCL
+data_clk_pll clq	$DLNET_$DLSTA_LPL
+data_clk_qual gps	$DLNET_$DLSTA_LCC
+data_cnp_err_code cnpc
+data_cnp_err_port cnpp
+data_dig_phase dig
+data_dig_phase_why digw
+data_gps gpss
+data_gps_cs gpsc
+data_leap leap
+data_m0 m0	$DLNET_$DLSTA_VM1
+data_m1 m1	$DLNET_$DLSTA_VM2
+data_m2 m2	$DLNET_$DLSTA_VM3
+data_m3 m3	$DLNET_$DLSTA_VM4
+data_m4 m4	$DLNET_$DLSTA_VM5
+data_m5 m5	$DLNET_$DLSTA_VM6
+data_opto_input opt	$DLNET_$DLSTA_VTW
+data_pkt_buf pb	$DLNET_$DLSTA_VPB
+data_pll_drift plld
+data_por_drift drf
+data_pow_phase powp
+data_record rec
+data_seis0_temp s0t	$DLNET_$DLSTA_UKA
+data_seis1_temp s1t	$DLNET_$DLSTA_UKB
+data_serial_chan0 sc0     $DLNET_$DLSTA_LDO
+data_serial_chan1 sc1     $DLNET_$DLSTA_LDI
+data_serial_chan2 sc2     $DLNET_$DLSTA_LK1
+data_serial_chan3 sc3     $DLNET_$DLSTA_LK2
+data_slavep_err_code slpc
+data_spare_anl sp	$DLNET_$DLSTA_VSP
+data_status_port stp	$DLNET_$DLSTA_VPT
+data_suppl_neg spn	$DLNET_$DLSTA_VEL
+data_suppl_pos spv	$DLNET_$DLSTA_VEH
+data_sys_curr da	$DLNET_$DLSTA_VEC
+data_sys_temp dt	$DLNET_$DLSTA_VKI
+data_sys_volt dv	$DLNET_$DLSTA_VEP
+data_vco vco	$DLNET_$DLSTA_VCO
+q330_byts_rd24 br24	$DLNET_$DLSTA_QRD
+q330_byts_wr24 bw24	$DLNET_$DLSTA_QWD
+q330_comm_eff ce	$DLNET_$DLSTA_QEF
+q330_data_bufr pbr	$DLNET_$DLSTA_QBP
+q330_data_gaps dg	$DLNET_$DLSTA_QDG
+q330_data_gp1 gp1	$DLNET_$DLSTA_QG1
+q330_data_gp24 gp24	$DLNET_$DLSTA_QGD
+q330_data_ltc dlt	$DLNET_$DLSTA_QDL
+q330_data_ni24 ni24	$DLNET_$DLSTA_QID
+q330_data_nl24 nl24	$DLNET_$DLSTA_QLD
+q330_data_np24 np24	$DLNET_$DLSTA_QPD
+q330_data_nr24 nr24	$DLNET_$DLSTA_QBD
+q330_data_tput tput	$DLNET_$DLSTA_QTP
+q330_drate_tot dr	$DLNET_$DLSTA_QDR
+q330_pkts_badsz pkse	$DLNET_$DLSTA_QPS
+q330_pkts_chksm pkce	$DLNET_$DLSTA_QPC
+q330_pkts_proc pkp	$DLNET_$DLSTA_QPK
+q330_run_time rtm	$DLNET_$DLSTA_QRT
+q330_throttle thr	$DLNET_$DLSTA_QTH
+}
+status_orbtag dataorb
+statusreport_interval 20
+statusrequest_interval 20
+throttle 56000
+thruput_interval 120.0
+timeout_control 20
+timeout_data 36
+timeout_datathread_hang 14400
+trim_link_overlaps yes
+udp_packetcache_size_control 10
+udp_packetcache_size_data 10
+user_message_level 1
+verbose_log 0
+}

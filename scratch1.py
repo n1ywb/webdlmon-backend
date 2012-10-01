@@ -6,6 +6,9 @@ import re
 from pprint import pformat
 import os
 import os.path
+import json
+from datetime import datetime
+import time
 
 from antelope import orb, stock
 from antelope.Pkt import Pkt
@@ -16,96 +19,100 @@ logging.basicConfig(level=logging.DEBUG)
 
 match_regex = r'.*/pf/(st|vtw)'
 file_re = re.compile(r'/pf/(st|vtw)')
-header = "<?xml version=\"1.0\" encoding=\"iso-8859-1\"?>\n"
 
 
-def pfmorph(pfname):
-    dls  = dict()
-    v = stock.pfget( pfname, "dls" )
-    if v is not None:
-        dls.update(v)
-    for sta in dls.keys():
-        if dls[sta]['opt'] is not None and dls[sta]['opt'] != "-":
-            dls[sta]['acok'] = 1 if dls[sta]['opt'].contains('acok') else 0
-            dls[sta]['api'] = 1 if dls[sta]['opt'].contains('api') else 0
-            dls[sta]['isp1'] = 1 if dls[sta]['opt'].contains('isp1') else 0
-            dls[sta]['isp2'] = 1 if dls[sta]['opt'].contains('isp2') else 0
-            dls[sta]['ti'] = 1 if dls[sta]['opt'].contains('ti') else 0
-        else:
-            dls[sta]['acok'] = "-"
-            dls[sta]['api']  = "-"
-            dls[sta]['isp1'] = "-"
-            dls[sta]['isp2'] = "-"
-            dls[sta]['ti']   = "-"
-    stock.pfput( "dls", dls, pfname )
+SORTORDERS = {
+    'yes': 4,
+    'waiting': 4,
+    'su': 1,
+    'reg': 1,
+    'sleeping': 1,
+    'hibernating': 1,
+    'no': 1,
+    'stopped': 0,
+}
 
 
-def write_pf(pfname, file):
-    pfmorph(pfname)
-    xmlstring = stock.pf2xml( pfname, "-n", header, "")
-    backbuffer_file = file + '+'
-    with open(backbuffer_file, 'w') as F:
-            F.write(xmlstring)
-            os.rename(backbuffer_file, file)
+class DLStatus(object):
+    def __init__(self, filename):
+        self.filename = filename
+        self.status = {
+            'metadata': {
+                'timestamp': None
+            },
+            'dataloggers': {}
+        }
+
+    def update_status(self, pfdict):
+        """Updates status from pfdict"""
+        pfdict = self.pfmorph(pfdict)
+        for stn,status in pfdict['dls'].items():
+            net, sep, stnonly = stn.partition('_')
+            sort_order = str(SORTORDERS[status['con']]) + stnonly
+            self.status['dataloggers'][stn] = {
+                    'sortorder': sort_order,
+                    'values': status }
+        self.status['metadata']['timestamp'] = time.mktime(
+                datetime.utcnow().timetuple())
+        self.save()
+
+    def save(self):
+        jsonstr = json.dumps(self.status, sort_keys=True, indent=4)
+        backbuffer_file = self.filename + '+'
+        with open(backbuffer_file, 'w') as F:
+                F.write(jsonstr)
+        os.rename(backbuffer_file, self.filename)
+
+    def pfmorph(self, pfdict):
+        dls  = dict()
+        if pfdict.has_key('dls'):
+            dls = pfdict['dls']
+        for sta in dls.keys():
+            if dls[sta]['opt'] is not None and dls[sta]['opt'] != "-":
+                dls[sta]['acok'] = 1 if 'acok' in dls[sta]['opt'] else 0
+                dls[sta]['api'] = 1 if 'api' in dls[sta]['opt'] else 0
+                dls[sta]['isp1'] = 1 if 'isp1' in dls[sta]['opt'] else 0
+                dls[sta]['isp2'] = 1 if 'isp2' in dls[sta]['opt'] else 0
+                dls[sta]['ti'] = 1 if 'ti' in dls[sta]['opt'] else 0
+            else:
+                dls[sta]['acok'] = "-"
+                dls[sta]['api']  = "-"
+                dls[sta]['isp1'] = "-"
+                dls[sta]['isp2'] = "-"
+                dls[sta]['ti']   = "-"
+        pfdict['dls'] = dls
+        return pfdict
 
 
-def proc_pfstring(outdir, pfstring, srcname):
+def proc_pfstring(pfstring):
     pfstring = pfstring.strip('\0')
-    outfile = file_re.sub('', srcname)
-    outfile += "_stash.xml"
-    outfile = os.path.join(outdir, outfile)
-    pfname = "apf"
-    stock.pfnew(pfname)
-    # TODO why does pfcompile raise a typerror complaining I am not
-    # passing a string when I AM passing strings?
-    stock.pfcompile(pfstring, pfname)
-    write_pf(pfname, outfile)
-    # TODO why is the python api missing pffree()? is this a leak?
-    # stock.pffree( pfname )
+    pfptr = stock.pfnew()
+    stock.pfcompile(pfstring, pfptr)
+    pfdict = stock.pfget(pfptr, '')
+    return pfdict
 
 
-def proc_no_pfstring(outdir, srcname, packet, raw_packet):
-    outfile = file_re.sub('', srcname)
-    outfile += ".xml"
-    outfile = os.path.join(outdir, outfile)
-    # packet.pf is a string; do we need to access it for a side
-    # effect? why does the perl code call it?
-    pfname = packet.pf
-    #foo = packet.pf
-    #pfname = "Packet::pf"
-    pfobj = _Pkt._Pkt_pf_get(raw_packet)
-    pfcompile(pfobj, pfname)
-    dls  = dict()
-    v = stock.pfget( pfname, "dls" )
-    if v is not None:
-        dls.update(v)
-    for sta in dls.keys():
-        if dls[sta]['opt'] is not None and dls[sta]['opt'] != "-":
-            dls[sta]['acok'] = 1 if dls[sta]['opt'].contains('acok') else 0
-            dls[sta]['api'] = 1 if dls[sta]['opt'].contains('api') else 0
-            dls[sta]['isp1'] = 1 if dls[sta]['opt'].contains('isp1') else 0
-            dls[sta]['isp2'] = 1 if dls[sta]['opt'].contains('isp2') else 0
-            dls[sta]['ti'] = 1 if dls[sta]['opt'].contains('ti') else 0
-        else:
-            dls[sta]['acok'] = "-"
-            dls[sta]['api']  = "-"
-            dls[sta]['isp1'] = "-"
-            dls[sta]['isp2'] = "-"
-            dls[sta]['ti']   = "-"
-    stock.pfput( "dls", dls, pfname )
-    xmlstring = stock.pf2xml( pfname, "-n", header, "")
-    backbuffer_file = file + '+'
-    with open(backbuffer_file, 'w') as F:
-            F.write(xmlstring)
-            os.rename(backbuffer_file, file)
-
-
+def get_pf(myorb):
+    while True:
+        pktid, srcname, time, raw_packet, nbytes = myorb.reap()
+        if pktid is None:
+            continue
+        packet = Pkt(srcname, time, raw_packet)
+        # TODO onfirm if this value is equivilent to the 'kind'
+        # returned by unstuffpkt
+        pkttypename = packet.pkttype['name']
+        if pkttypename in ('st', 'pf', 'stash'):
+            pfstring = packet.string
+            if pfstring is not None and pfstring != '':
+                pfdict = proc_pfstring(pfstring)
+            else:
+                pfdict = stock.pfget(packet.pfptr, '')
+            yield pfdict
 
 
 def main(args=None):
     if args is None:
         args = sys.argv
-    npkts = 0
     op = OptionParser()
     op.add_option("-a", "--after", dest="after",
                      help="rewinds the orbserver packet stream to the time specified.")
@@ -124,22 +131,12 @@ def main(args=None):
         myorb.after(after_time)
     nsources = myorb.select(options.match)
     logging.info("%d sources" % nsources)
-    while (True):
-	pktid, srcname, time, raw_packet, nbytes = myorb.reap()
-	npkts += 1
-        if pktid is None:
-            continue
-        packet = Pkt(srcname, time, raw_packet)
-        # TODO onfirm if this value is equivilent to the 'kind'
-        # returned by unstuffpkt
-        pkttypename = packet.pkttype['name']
-        if pkttypename in ('st', 'pf', 'stash'):
-            pfstring = packet.string
-            if pfstring is not None and pfstring != '':
-                proc_pfstring(outdir, pfstring, srcname)
-            else:
-                proc_no_pfstring(outdir, srcname, packet, raw_packet)
+    dlstatus = DLStatus(os.path.join(outdir, 'webdlmon.json'))
+    for pfdict in get_pf(myorb):
+        dlstatus.update_status(pfdict)
+
 
 
 if __name__ == '__main__':
     exit(main())
+

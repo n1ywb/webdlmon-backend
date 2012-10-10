@@ -19,9 +19,8 @@ def main(args=None):
     myorb = orb.orbopen( ORBNAME, "r&" )
     pprint(vars(myorb))
     print myorb
-    orbfd = myorb._orbfd
     while True:
-        id, namebuf, pkttime, packet, nbytes = crap.orbreap_timeout(orbfd, 0)
+        id, namebuf, pkttime, packet, nbytes = crap.orbreap_timeout(myorb, 0)
         pprint(dict(
             id=id,
             namebuf=namebuf,

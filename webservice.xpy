@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+import traceback
 from optparse import OptionParser
 import sys
 import json
@@ -14,6 +15,8 @@ from twisted.internet import reactor, defer
 from twisted.internet.threads import deferToThread
 from twisted.web.resource import Resource
 from twisted.web.server import Site
+
+sys.path.append(os.environ['ANTELOPE'] + '/data/python')
 
 from antelope import orb, stock
 from antelope.Pkt import Pkt
@@ -48,15 +51,13 @@ class DLMon(Resource):
 
     def render(self, request):
         try:
+	    request.setHeader("content-type", "application/json")
+	    if request.args.has_key('callback'):
+		    request.setHeader("content-type", "application/javascript")
+		    return request.args['callback'][0] + '(' + self.dlstatus.to_json() + ')'
             return self.dlstatus.to_json()
         except Exception, e:
-            # Just template... never getting here now
-            log.msg('Got request: %s' % request)
-            args = request.uri.split("/")[1:]
-            log.msg('Got args: %s' % args)
-            request.setHeader("content-type", "text/html")
-            request.setHeader("response-code", 500)
-            return "Unknown query type:(%s) HALHALGHALGH" % args
+	    raise
 
 
 def main(args=None):
@@ -98,7 +99,7 @@ def main(args=None):
     log.msg('\t\t\t\t\t=> OK')
 
     log.msg('Setup TCP port:')
-    reactor.listenTCP(8880, website)
+    reactor.listenTCP(7000, website)
     log.msg('\t\t\t\t\t=> OK')
 
     log.msg('Run reactor:')

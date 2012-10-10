@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from pprint import pprint
 
 from ctypes import CDLL, create_string_buffer, string_at
 from ctypes import c_bool, c_char, c_wchar, c_byte, c_ubyte, c_short, c_ushort
@@ -25,6 +26,7 @@ def orbreap_timeout(orbfd, maxseconds=0.0):
     #                     char **pkt, int *nbytes,
     #                     int *bufsize)
 
+    orbfd = orbfd._orbfd
     pktid = c_int()
     pkttime = c_double()
     srcname = create_string_buffer(ORBSRCNAME_SIZE)
@@ -34,5 +36,20 @@ def orbreap_timeout(orbfd, maxseconds=0.0):
     r = liborb.orbreap_timeout(orbfd, maxseconds, byref(pktid), srcname, byref(pkttime),
                 byref(packet), byref(nbytes), byref(bufsize))
     # The stock bindings swallow r; we could return it...
-    return pktid, string_at(srcname), pkttime, string_at(packet, nbytes), nbytes
+    if r < 0:
+        pktid, srcname, pkttime, packet, nbytes = None, None, None, None, None
+    else:
+        pktid = pktid.value
+        srcname = string_at(srcname)
+        pkttime = pkttime.value
+        packet = string_at(packet, nbytes)
+        nbytes = nbytes.value
+#    pprint(dict(
+#            pktid=pktid,
+#            srcname=srcname,
+#            pkttime=pkttime,
+#            packet=str(packet)[:50],
+#            nbytes=nbytes,
+#        ))
+    return pktid, srcname, pkttime, packet, nbytes
 

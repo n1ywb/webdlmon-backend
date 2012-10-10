@@ -16,6 +16,8 @@ from antelope import orb, stock
 from antelope.Pkt import Pkt
 from antelope import _Pkt
 
+import crap
+
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -45,9 +47,9 @@ class DLStatus(object):
             },
             'dataloggers': {}
         }
-        d = deferToThread(self.block_forever)
-        #d = deferToThread(self.myorb.reap)
-        #d.addCallback(self.reap_cb)
+        #d = deferToThread(self.block_forever)
+        d = deferToThread(crap.orbreap_timeout, self.myorb, 1.0)
+        d.addCallback(self.reap_cb)
 
     def block_forever(self, *args, **kwargs):
         l = Lock()
@@ -68,7 +70,7 @@ class DLStatus(object):
                 else:
                     pfdict = stock.pfget(packet.pfptr, '')
                 self.update_status(pfdict)
-        d = deferToThread(self.myorb.reap)
+        d = deferToThread(crap.orbreap_timeout, self.myorb, 10.0)
         d.addCallback(self.reap_cb)
 
     def update_status(self, pfdict):
@@ -80,12 +82,12 @@ class DLStatus(object):
             self.status['dataloggers'][stn] = {
                     'sortorder': sort_order,
                     'values': status }
-        self.status['metadata']['timestamp'] = time.mktime(
-                datetime.utcnow().timetuple())
+        self.status['metadata']['timestamp'] = str(int(time.mktime(
+                datetime.utcnow().timetuple())))
         self.save()
 
     def to_json(self):
-        return json.dumps(self.status, sort_keys=True, indent=4)
+        return json.dumps(self.status)#, sort_keys=True, indent=4)
 
     def save(self):
         jsonstr = self.to_json()

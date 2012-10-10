@@ -22,7 +22,15 @@ from antelope import orb, stock
 from antelope.Pkt import Pkt
 from antelope import _Pkt
 
-from dlstatus import DLStatus, match_regex
+from dlstatus import DLStatus, DLSource, match_regex
+
+
+config = {
+        'dlmon': [('anfexport:prelim', None, None)],
+        'foo': [('anfexport:status', None, None)],
+        'bar': [('anfexport:status', None, None), ('anfexport:prelim', None,
+            None)],
+}
 
 
 class ROOT(Resource):
@@ -64,35 +72,24 @@ def main(args=None):
     if args is None:
         args = sys.argv
     op = OptionParser()
-    op.add_option("-a", "--after", dest="after",
-                     help="rewinds the orbserver packet stream to the time specified.")
     op.add_option("-v", "--verbose", dest="verbose",
                      action="store_true")
-    op.add_option("-m", "--match", dest="match", default=match_regex,
-                     help="match expression to use against orb source names.")
     (options, args) = op.parse_args(args[1:])
-    outdir = args.pop()
-    orbname = args.pop()
-    if not os.path.exists(outdir):
-        os.makedirs(outdir)
-    myorb = orb.orbopen( orbname, "r&" )
-    if options.after is not None:
-        # options.after to epoch
-        myorb.after(after_time)
-    nsources = myorb.select(options.match)
-    logging.info("%d sources" % nsources)
-    dlstatus = DLStatus(os.path.join(outdir, 'webdlmon.json'), myorb)
+
+    root = ROOT()
+
+    dlstatuses = {}
+    for dlstatus_name,v in config.items():
+        dlstatus = DLStatus()
+        dlstatuses[dlstatus_name] = dlstatus
+        for orbname,match,rej in v:
+            match = match if match is not None else match_regex
+            rej = rej if rej is not None else ''
+            source = DLSource(orbname,match,rej)
+            source.add_sink(dlstatus.update_status)
+        root.putChild(dlstatus_name, DLMon(dlstatus))
 
     log.startLogging(sys.stdout)
-
-    log.msg('Set root site:')
-    root = ROOT()
-    log.msg('\t\t\t\t\t=> OK')
-
-    log.msg('Append service:')
-    log.msg('\t\tdlmon()')
-    root.putChild("dlmon", DLMon(dlstatus))
-    log.msg('\t\t\t\t\t=> OK')
 
     log.msg('Build as site object:')
     website = Site( root )

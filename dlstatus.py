@@ -36,28 +36,17 @@ SORTORDERS = {
     'stopped': 0,
 }
 
-
-class DLStatus(object):
-    def __init__(self, filename, myorb):
-        self.filename = filename
-        self.myorb = myorb
-        self.status = {
-            'metadata': {
-                'timestamp': None
-            },
-            'dataloggers': {}
-        }
-        #d = deferToThread(self.block_forever)
-        d = deferToThread(crap.orbreap_timeout, self.myorb, 1.0)
+class DLSource(object):
+    def __init__(self, orbname, match, rej):
+        myorb = orb.orbopen( orbname, "r&" )
+        myorb.select(match)
+        myorb.reject(rej)
+        self.orb = myorb
+        self.sinks = []
+        d = deferToThread(crap.orbreap_timeout, self.orb, 1.0)
         d.addCallback(self.reap_cb)
-
-    def block_forever(self, *args, **kwargs):
-        l = Lock()
-        print "Trying to block forever."
-        l.acquire(True)
-        l.acquire(True)
-        print "oops, didn't block forever afterall."
-
+    def add_sink(self, sink_func):
+        self.sinks.append(sink_func)
     def reap_cb(self, r):
         pktid, srcname, time, raw_packet, nbytes = r
         if pktid is not None:
@@ -69,9 +58,20 @@ class DLStatus(object):
                     pfdict = pfstring_to_pfdict(pfstring)
                 else:
                     pfdict = stock.pfget(packet.pfptr, '')
-                self.update_status(pfdict)
-        d = deferToThread(crap.orbreap_timeout, self.myorb, 10.0)
+                for sink in self.sinks:
+                    sink(pfdict)
+        d = deferToThread(crap.orbreap_timeout, self.orb, 10.0)
         d.addCallback(self.reap_cb)
+
+
+class DLStatus(object):
+    def __init__(self):
+        self.status = {
+            'metadata': {
+                'timestamp': None
+            },
+            'dataloggers': {}
+        }
 
     def update_status(self, pfdict):
         """Updates status from pfdict"""
@@ -84,17 +84,9 @@ class DLStatus(object):
                     'values': status }
         self.status['metadata']['timestamp'] = str(int(time.mktime(
                 datetime.utcnow().timetuple())))
-        self.save()
 
     def to_json(self):
-        return json.dumps(self.status)#, sort_keys=True, indent=4)
-
-    def save(self):
-        jsonstr = self.to_json()
-        backbuffer_file = self.filename + '+'
-        with open(backbuffer_file, 'w') as F:
-                F.write(jsonstr)
-        os.rename(backbuffer_file, self.filename)
+        return json.dumps(self.status, sort_keys=True, indent=4)
 
     def pfmorph(self, pfdict):
         dls  = dict()

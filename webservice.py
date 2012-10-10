@@ -26,8 +26,8 @@ from dlstatus import DLStatus, DLSource, match_regex
 
 
 config = {
-        'dlmon': [('anfexport:prelim', None, None)],
-        'foo': [('anfexport:status', None, None)],
+        'dlmon': [('anfexport:status', None, None)],
+        'foo': [('anfexport:prelim', None, None)],
         'bar': [('anfexport:status', None, None), ('anfexport:prelim', None,
             None)],
 }

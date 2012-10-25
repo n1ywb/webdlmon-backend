@@ -11,6 +11,7 @@ sys.path.append(os.environ['ANTELOPE'] + '/data/python')
 
 from antelope.Pkt import Pkt, suffix2pkttype
 from antelope.orb import orbopen, ORBOLDEST, ORBPREV, ORBNEWEST
+from antelope.stock import pfnew, pfput, pfget
 
 orbdir = '/export/home/jeff/orb2'
 orbname = ':6666'
@@ -36,19 +37,21 @@ del_orbdir()
 os.makedirs(orbdir)
 with terminating(Popen(orbsrvargs, cwd=orbdir)) as orbserverproc:
     time.sleep(2)
-    orb = orbopen( orbname, "w&" )
+    orb = orbopen(orbname, "w&")
     for x in xrange(100):
+        pf = pfnew()
+        pfput('foobar', teststring, pf)
         pkt = Pkt()
-        pkt.string = teststring
+        pkt.pfptr = pf
         pkt.srcnameparts = dict(
             net='net',
             sta='sta',
             chan='chan',
             loc='loc',
-            suffix='ch',
+            suffix='pf',
             subcode='subcode',
         )
-        pkt.pkttype = suffix2pkttype("ch")
+        pkt.pkttype = suffix2pkttype("pf")
         (type_, packet, srcname, timestamp) = pkt.stuff()
         assert packet
         pktid = orb.putx(srcname, timestamp, packet, len(packet))
@@ -66,6 +69,7 @@ with terminating(Popen(orbsrvargs, cwd=orbdir)) as orbserverproc:
         assert pktid == rpktid
         rpkt = Pkt(rsrcname, rtimestamp, rpacket)
         #assert pkt.string.strip('\0') == rpkt.string.strip('\0')
+        assert pfget(rpkt.pfptr, 'foobar')[0] == 'A'
         curpktid += 1
 
 del_orbdir()

@@ -1,29 +1,21 @@
 #!/usr/bin/env python
-import sys
 import logging
-import re
 from pprint import pformat
-import os
-import os.path
 import json
 from datetime import datetime
 import time
-from threading import Lock
 
 from twisted.internet.threads import deferToThread
 
 from antelope import orb, stock
 from antelope.Pkt import Pkt
-from antelope import _Pkt
 
 import crap
 
 
 logging.basicConfig(level=logging.DEBUG)
 
-match_regex = r'.*/pf/(st|vtw)'
-file_re = re.compile(r'/pf/(st|vtw)')
-
+DEFAULT_MATCH = r'.*/pf/(st|vtw)'
 
 SORTORDERS = {
     'yes': 4,
@@ -36,6 +28,11 @@ SORTORDERS = {
     'stopped': 0,
 }
 
+
+import gc
+
+pktno = 0
+
 class DLSource(object):
     def __init__(self, orbname, match, rej):
         myorb = orb.orbopen( orbname, "r&" )
@@ -45,27 +42,40 @@ class DLSource(object):
         self.sinks = []
         d = deferToThread(crap.orbreap_timeout, self.orb, 1.0)
         d.addCallback(self.reap_cb)
+        d.addErrback(self.reap_eb)
+    def reap_eb(self,e):
+        return e
     def add_sink(self, sink_func):
         self.sinks.append(sink_func)
     def reap_cb(self, r):
+        global pktno
         pktid, srcname, time, raw_packet, nbytes = r
         if pktid is not None:
+            pktno += 1
+            logging.debug("orbreap packet #%d: %d bytes" % (pktno, nbytes))
             packet = Pkt(srcname, time, raw_packet)
             pkttypename = packet.pkttype['name']
             if pkttypename in ('st', 'pf', 'stash'):
                 pfstring = packet.string
                 if pfstring is not None and pfstring != '':
+                    logging.debug("calling pfstring_to_pfdict(pfstring)")
                     pfdict = pfstring_to_pfdict(pfstring)
                 else:
+                    logging.debug("calling stock.pfget(packet.pfptr, '')")
                     pfdict = stock.pfget(packet.pfptr, '')
                 for sink in self.sinks:
                     sink(pfdict)
+        gc.collect()
         d = deferToThread(crap.orbreap_timeout, self.orb, 10.0)
         d.addCallback(self.reap_cb)
+        d.addErrback(self.reap_eb)
+    def __del__(self):
+        self.orb.close()
 
 
 class DLStatus(object):
     def __init__(self):
+        self.seen_stns = set()
         self.status = {
             'metadata': {
                 'timestamp': None
@@ -73,20 +83,35 @@ class DLStatus(object):
             'dataloggers': {}
         }
 
+    @staticmethod
+    def new_stn_cb(dlmon, id):
+        """Monkey patch over this as necessary."""
+        pass
+
     def update_status(self, pfdict):
         """Updates status from pfdict"""
         pfdict = self.pfmorph(pfdict)
         for stn,status in pfdict['dls'].items():
+            if not stn in self.seen_stns:
+                self.seen_stns.add(stn)
+                self.new_stn_cb(self, stn)
             net, sep, stnonly = stn.partition('_')
             sort_order = str(SORTORDERS[status['con']]) + stnonly
             self.status['dataloggers'][stn] = {
                     'sortorder': sort_order,
+                    'name': stn,
                     'values': status }
         self.status['metadata']['timestamp'] = str(int(time.mktime(
                 datetime.utcnow().timetuple())))
 
     def to_json(self):
-        return json.dumps(self.status, sort_keys=True, indent=4)
+        status = dict(self.status)
+        status['dataloggers'] = status['dataloggers'].values()
+        return json.dumps(status, sort_keys=True, indent=4)
+
+    def stn_to_json(self, id):
+        stn = self.status['dataloggers'][id]
+        return json.dumps(stn, sort_keys=True, indent=4)
 
     def pfmorph(self, pfdict):
         dls  = dict()

@@ -11,6 +11,8 @@ __all__ = ['orbreap_timeout']
 
 ORBSRCNAME_SIZE = 64
 
+libc = CDLL('libc.so.6')
+
 liborb = CDLL("liborb.so.3")
 liborb.orbreap_timeout.argtypes = [c_int, c_double, POINTER(c_int),
             c_char_p, POINTER(c_double), POINTER(POINTER(c_char)),
@@ -30,19 +32,19 @@ def orbreap_timeout(orbfd, maxseconds=0.0):
     pktid = c_int()
     pkttime = c_double()
     srcname = create_string_buffer(ORBSRCNAME_SIZE)
-    packet = pointer(c_char())
+    packet = POINTER(c_char)()
     nbytes = c_int()
     bufsize = c_int(0)
     r = liborb.orbreap_timeout(orbfd, maxseconds, byref(pktid), srcname, byref(pkttime),
                 byref(packet), byref(nbytes), byref(bufsize))
     # The stock bindings swallow r; we could return it...
     if r < 0:
-        pktid, srcname, pkttime, packet, nbytes = None, None, None, None, None
+        pktid, srcname, pkttime, packetstr, nbytes = None, None, None, None, None
     else:
         pktid = pktid.value
         srcname = string_at(srcname)
         pkttime = pkttime.value
-        packet = string_at(packet, nbytes)
+        packetstr = string_at(packet, nbytes)
         nbytes = nbytes.value
 #    pprint(dict(
 #            pktid=pktid,
@@ -51,5 +53,6 @@ def orbreap_timeout(orbfd, maxseconds=0.0):
 #            packet=str(packet)[:50],
 #            nbytes=nbytes,
 #        ))
-    return pktid, srcname, pkttime, packet, nbytes
+        libc.free(packet)
+    return pktid, srcname, pkttime, packetstr, nbytes
 

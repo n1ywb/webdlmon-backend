@@ -101,9 +101,9 @@ class App(object):
                 rej = rej if rej is not None else ''
                 source = DLSource(orbname,match,rej)
                 source.add_sink(dlstatus.update_status)
+            log.msg("New dlstatus: %s" % dlstatus_name)
             root.putChild(dlstatus_name, dlmon)
 
-        log.startLogging(sys.stdout)
 
         log.msg('Build as site object:')
         website = Site( root )
@@ -129,5 +129,6 @@ def main(args=None):
 
 
 if __name__ == '__main__':
+    log.startLogging(sys.stdout)
     exit(main())
 

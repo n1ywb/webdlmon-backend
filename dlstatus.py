@@ -7,11 +7,10 @@ import time
 
 from twisted.internet.threads import deferToThread
 
-from antelope import orb, stock
-from antelope.Pkt import Pkt
-
-import crap
-
+from kudu.exc import OrbIncomplete
+from kudu.orb import Orb
+from kudu.pkt import Pkt
+from antelope import _stock
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -35,19 +34,29 @@ pktno = 0
 
 class DLSource(object):
     def __init__(self, orbname, match, rej):
-        myorb = orb.orbopen( orbname, "r&" )
+        myorb = Orb( orbname, "r&" )
         myorb.select(match)
         myorb.reject(rej)
         self.orb = myorb
         self.sinks = []
-        d = deferToThread(crap.orbreap_timeout, self.orb, 1.0)
+        d = deferToThread(self.orb.reap_timeout, 1.0)
         d.addCallback(self.reap_cb)
         d.addErrback(self.reap_eb)
-    def reap_eb(self,e):
-        return e
+    def __enter__(self):
+        pass
+    def __exit__(self, exc_type, exc_value, traceback):
+        self.close()
+    def reap_eb(self,failure):
+        print "in reap_eb"
+        failure.trap(OrbIncomplete)
+        d = deferToThread(self.orb.reap_timeout, 1.0)
+        d.addCallback(self.reap_cb)
+        d.addErrback(self.reap_eb)
+        return None
     def add_sink(self, sink_func):
         self.sinks.append(sink_func)
     def reap_cb(self, r):
+        print "in reap_cb"
         global pktno
         pktid, srcname, time, raw_packet, nbytes = r
         if pktid is not None:
@@ -62,14 +71,14 @@ class DLSource(object):
                     pfdict = pfstring_to_pfdict(pfstring)
                 else:
                     logging.debug("calling stock.pfget(packet.pfptr, '')")
-                    pfdict = stock.pfget(packet.pfptr, '')
+                    pfdict = packet.pfdict
                 for sink in self.sinks:
                     sink(pfdict)
         gc.collect()
-        d = deferToThread(crap.orbreap_timeout, self.orb, 10.0)
+        d = deferToThread(self.orb.reap_timeout, 1.0)
         d.addCallback(self.reap_cb)
         d.addErrback(self.reap_eb)
-    def __del__(self):
+    def close(self):
         self.orb.close()
 
 
@@ -136,10 +145,12 @@ class DLStatus(object):
 
 def pfstring_to_pfdict(pfstring):
     pfstring = pfstring.strip('\0')
-    pfptr = stock.pfnew()
-    stock.pfcompile(pfstring, pfptr)
-    pfdict = stock.pfget(pfptr, '')
-    return pfdict
-
-
+    pfptr = _stock._pfnew()
+    try:
+        r = _stock._pfcompile(pfstring, pfptr)
+        if r != 0: raise Exception("pfcompile failed")
+        pfdict = _stock._pfget(pfptr, None)
+        return pfdict
+    finally:
+        _stock._pffree(pfptr)
 

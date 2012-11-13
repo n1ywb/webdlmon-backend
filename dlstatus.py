@@ -14,6 +14,7 @@ from antelope import _stock
 
 logging.basicConfig(level=logging.DEBUG)
 
+REAP_TIMEOUT = 2
 DEFAULT_MATCH = r'.*/pf/(st|vtw)'
 
 SORTORDERS = {
@@ -39,7 +40,7 @@ class DLSource(object):
         myorb.reject(rej)
         self.orb = myorb
         self.sinks = []
-        d = deferToThread(self.orb.reap_timeout, 1.0)
+        d = deferToThread(self.orb.reap_timeout, REAP_TIMEOUT)
         d.addCallback(self.reap_cb)
         d.addErrback(self.reap_eb)
     def __enter__(self):
@@ -49,7 +50,7 @@ class DLSource(object):
     def reap_eb(self,failure):
         print "in reap_eb"
         failure.trap(OrbIncomplete)
-        d = deferToThread(self.orb.reap_timeout, 1.0)
+        d = deferToThread(self.orb.reap_timeout, REAP_TIMEOUT)
         d.addCallback(self.reap_cb)
         d.addErrback(self.reap_eb)
         return None
@@ -75,7 +76,7 @@ class DLSource(object):
                 for sink in self.sinks:
                     sink(pfdict)
         gc.collect()
-        d = deferToThread(self.orb.reap_timeout, 1.0)
+        d = deferToThread(self.orb.reap_timeout, REAP_TIMEOUT)
         d.addCallback(self.reap_cb)
         d.addErrback(self.reap_eb)
     def close(self):

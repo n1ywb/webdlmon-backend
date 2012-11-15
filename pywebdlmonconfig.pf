@@ -1,0 +1,41 @@
+bar	&Tbl{
+    &Tbl{
+	anfexport:status
+	&Literal{
+}
+	&Literal{
+}
+    }
+    &Tbl{
+	anfexport:prelim
+	&Literal{
+}
+	&Literal{
+}
+    }
+}
+dlmon	&Tbl{
+    &Tbl{
+	anfexport:status
+	&Literal{
+}
+	&Literal{
+}
+    }
+    &Tbl{
+	anfexport:cascadia_status
+	&Literal{
+}
+	&Literal{
+}
+    }
+}
+foo	&Tbl{
+    &Tbl{
+	anfexport:prelim
+	&Literal{
+}
+	&Literal{
+}
+    }
+}

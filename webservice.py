@@ -17,17 +17,28 @@ from twisted.web.server import Site
 
 sys.path.append(os.environ['ANTELOPE'] + '/data/python')
 
+from antelope import _stock
 from dlstatus import DLStatus, DLSource, DEFAULT_MATCH
 
 
-config = {
+_config = {
         # 'dlmon_name': [('orb1', 'match regex (None for default)', 'reject
         # regex (None for default)'), ... ],
-        'dlmon': [('anfexport:status', None, None), ('anfexport:cascadia_status', None, None)],
-        'foo': [('anfexport:prelim', None, None)],
-        'bar': [('anfexport:status', None, None), ('anfexport:prelim', None,
-            None)],
+        'dlmon': [('anfexport:status', '', ''), ('anfexport:cascadia_status', '', '')],
+        'foo': [('anfexport:prelim', '', '')],
+        'bar': [('anfexport:status', '', ''), ('anfexport:prelim', '',
+            '')],
 }
+
+CONF_PF = 'pywebdlmonconfig'
+r, confpf = _stock._pfread(CONF_PF)
+
+if r < 0:
+    logging.warning("Failed to open configuration parameter file %s." %
+            repr(CONF_PF))
+    config = _config
+else:
+    config = _stock._pfget(confpf, '')
 
 
 class ROOT(Resource):
@@ -92,13 +103,13 @@ class App(object):
     def run(self):
         root = ROOT()
         dlstatuses = {}
-        for dlstatus_name,v in config.items():
+        for dlstatus_name, v in config.iteritems():
             dlstatus = DLStatus()
             dlmon = DLMon(dlstatus_name, dlstatus)
             dlstatuses[dlstatus_name] = dlstatus
             for orbname,match,rej in v:
-                match = match if match is not None else DEFAULT_MATCH
-                rej = rej if rej is not None else ''
+                match = match if match is not '' else DEFAULT_MATCH
+                rej = rej
                 source = DLSource(orbname,match,rej)
                 source.add_sink(dlstatus.update_status)
             log.msg("New dlstatus: %s" % dlstatus_name)

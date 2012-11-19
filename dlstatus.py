@@ -128,7 +128,7 @@ class DLStatus(object):
         if pfdict.has_key('dls'):
             dls = pfdict['dls']
         for sta in dls.keys():
-            if dls[sta]['opt'] is not None and dls[sta]['opt'] != "-":
+            if 'opt' in dls[sta] and dls[sta]['opt'] != "-":
                 dls[sta]['acok'] = 1 if 'acok' in dls[sta]['opt'] else 0
                 dls[sta]['api'] = 1 if 'api' in dls[sta]['opt'] else 0
                 dls[sta]['isp1'] = 1 if 'isp1' in dls[sta]['opt'] else 0

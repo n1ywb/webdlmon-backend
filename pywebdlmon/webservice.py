@@ -102,7 +102,7 @@ class App(object):
         log.msg('\t\t\t\t\t=> OK')
 
         log.msg('Setup TCP port:')
-        reactor.listenTCP(cfg.port, website)
+        reactor.listenTCP(cfg.port, website, interface=cfg.bind_address)
         log.msg('\t\t\t\t\t=> OK')
 
         log.msg('Run reactor:')

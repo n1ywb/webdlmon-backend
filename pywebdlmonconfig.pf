@@ -1,41 +1,59 @@
-bar	&Tbl{
-    &Tbl{
-	anfexport:status
-	&Literal{
-}
-	&Literal{
-}
-    }
-    &Tbl{
-	anfexport:prelim
-	&Literal{
-}
-	&Literal{
-}
-    }
-}
-dlmon	&Tbl{
-    &Tbl{
-	anfexport:status
-	&Literal{
-}
-	&Literal{
-}
-    }
-    &Tbl{
-	anfexport:cascadia_status
-	&Literal{
-}
-	&Literal{
-}
-    }
-}
-foo	&Tbl{
-    &Tbl{
-	anfexport:prelim
-	&Literal{
-}
-	&Literal{
-}
-    }
+#
+# pywebdlmon backend parameter file
+#
+
+# Global options
+
+# Set an optional global match/reject statement which can be overridden on a
+# per instance basis
+match .*/pf/(st|vtw)
+#reject AZ_.* # We're not using this one
+
+# Listen on this address. 
+bind_address 0.0.0.0
+
+# Listen on this port.
+port 7000
+
+# Set the relative root URL - useful when behind a reverse proxy.
+# Defaults to "/"
+root /data/dlmon
+
+# Individual instances
+# The key is the short path. "root" defined above is prepended.
+# A value for each key is required, otherwise we have no idea what feed to
+# read from.
+
+instances &Arr{
+#   Example:
+#   a dlmon instance accessible at http://127.0.0.1/root/dlmon/foo
+#   with two feeds, one of which has a select statement
+#   The array keys are orb source names.
+#   The orb source names can have an optional &Arr containing configuration
+#   options such as match and reject
+#
+#   foo &Arr{
+#     # This Orb has options specified for it.
+#     host1:orbname1 &Arr{
+#       match .*
+#       reject foobar
+#     }
+#
+#     # This Orb has no options. 
+#     host1:orbname2
+#   }
+
+  dlmon &Arr{
+    anfexport:status 
+    anfexport:cascadia_status
+  }
+
+  foo &Arr{
+    anfexport:prelim
+  }
+
+  bar &Arr{
+    anfexport:status
+    anfexport:prelim
+  }
 }

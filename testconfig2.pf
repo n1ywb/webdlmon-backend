@@ -1,0 +1,10 @@
+instances &Arr{
+  inst1 &Arr{
+    src1 &Arr{
+        match match1
+        reject reject1
+    }
+    src2 
+  }
+}
+

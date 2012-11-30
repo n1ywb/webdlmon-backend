@@ -1,0 +1,14 @@
+match globmatch
+reject globreject
+bind_address 0.0.0.0
+port 7000
+root /data/dlmon
+instances &Arr{
+  inst1 &Arr{
+    src1 &Arr{
+        match match1
+        reject reject1
+    }
+    src2 
+  }
+}

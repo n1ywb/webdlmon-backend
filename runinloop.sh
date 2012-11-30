@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 TIMEOUT=600
-CMD="python webservice.py"
+CMD="./pywebdlmond"
 
 echo "Restarting ${CMD} every ${TIMEOUT} seconds."
 

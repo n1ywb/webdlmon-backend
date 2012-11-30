@@ -12,8 +12,6 @@ sys.path.append(os.environ['ANTELOPE'] + '/data/python')
 from antelope import _stock
 
 
-DEFAULT_PFNAME = 'pywebdlmonconfig'
-
 DEFAULTS = dict(
         match='.*',
         reject='',
@@ -54,12 +52,13 @@ class Config(object):
     )
     """
 
-    def __init__(self, pfname=DEFAULT_PFNAME):
-        r, confpf = _stock._pfread(pfname)
+    def __init__(self, options):
+        r, confpf = _stock._pfread(options.parameter_file)
         if r < 0:
             raise Exception("Failed to open configuration parameter file %s." %
-                    repr(CONF_PF))
-        [self.set_val(k, confpf) for k in DEFAULTS.iterkeys()]
+                    repr(options.parameter_file))
+
+        [self.set_val(k, confpf, options) for k in DEFAULTS.iterkeys()]
         self.instances={}
         instdict = _stock._pfget(confpf,'instances')
         for instname, instcfg in instdict.iteritems():
@@ -70,13 +69,20 @@ class Config(object):
                 sources[srcname] = source
             self.instances[instname] = sources
 
-    def set_val(self, k, pf):
-        v = _stock._pfget(pf,k)
+    def set_val(self, k, pf, options=None):
+        v = None
+        if options is not None:
+            try:
+                v = getattr(options, k)
+            except AttributeError:
+                pass
+        if v is None:
+            v = _stock._pfget(pf,k)
+            if v is None or v == '':
+                v = DEFAULTS[k]
         try:
             v = int(v)
         except (ValueError, TypeError):
             pass
-        if v is None:
-            v = DEFAULTS[k]
         setattr(self, k, v)
 

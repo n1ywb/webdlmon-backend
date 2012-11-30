@@ -82,8 +82,9 @@ class DLMonOneStn(ROOT):
 
 
 class App(object):
-    def run(self):
-        cfg = config.Config()
+    def run(self, options):
+        log.startLogging(sys.stdout)
+        cfg = config.Config(options)
         root = ROOT()
         dlstatuses = {}
         for dlstatus_name, srcs in cfg.instances.iteritems():
@@ -107,19 +108,4 @@ class App(object):
         log.msg('Run reactor:')
         reactor.run()
 
-
-def main(args=None):
-    if args is None:
-        args = sys.argv
-    op = OptionParser()
-    op.add_option("-v", "--verbose", dest="verbose",
-                     action="store_true")
-    (options, args) = op.parse_args(args[1:])
-    app = App()
-    app.run()
-
-
-if __name__ == '__main__':
-    log.startLogging(sys.stdout)
-    exit(main())
 

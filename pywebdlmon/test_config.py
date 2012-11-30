@@ -10,9 +10,17 @@ import config
 
 sys.path.append(os.environ['ANTELOPE'] + '/data/python')
 
+class Dummy(object):
+    def __init__(self, **kwargs):
+        [setattr(self, k, v) for (k, v) in kwargs.items()]
+
 class TestConfig(TestCase):
     def test_config(self):
-        c = config.Config('testconfig')
+        options = Dummy(parameter_file='testconfig',
+                        match=None, reject=None,
+                        bind_address=None,
+                        port=None, root=None)
+        c = config.Config(options)
         self.assertEquals(c.bind_address, '0.0.0.0')
         self.assertEquals(c.port, 7000)
         self.assertEquals(c.root, '/data/dlmon')
@@ -24,7 +32,11 @@ class TestConfig(TestCase):
 
 class TestConfig2(TestCase):
     def test_config2(self):
-        c = config.Config('testconfig2')
+        options = Dummy(parameter_file='testconfig2',
+                        match=None, reject=None,
+                        bind_address=None,
+                        port=None, root=None)
+        c = config.Config(options)
         self.assertEquals(c.bind_address, '0.0.0.0')
         self.assertEquals(c.port, 7000)
         self.assertEquals(c.root, '/data/dlmon')

@@ -36,10 +36,15 @@ class SourceConfig(object):
 class Config(object):
     """Global config object.
 
+    Global match and or reject are applied to sources which do not specify
+    them.
+
     properties:
     bind_address = str
     port = int
     root = str
+    match = str
+    reject = str
     instances = dict(
         instname = dict(
             sourcename: SourceConfig(match=str, reject=str),

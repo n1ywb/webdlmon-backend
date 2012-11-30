@@ -18,27 +18,9 @@ from twisted.web.server import Site
 sys.path.append(os.environ['ANTELOPE'] + '/data/python')
 
 from antelope import _stock
+
 from dlstatus import DLStatus, DLSource, DEFAULT_MATCH
-
-
-_config = {
-        # 'dlmon_name': [('orb1', 'match regex (None for default)', 'reject
-        # regex (None for default)'), ... ],
-        'dlmon': [('anfexport:status', '', ''), ('anfexport:cascadia_status', '', '')],
-        'foo': [('anfexport:prelim', '', '')],
-        'bar': [('anfexport:status', '', ''), ('anfexport:prelim', '',
-            '')],
-}
-
-CONF_PF = 'pywebdlmonconfig'
-r, confpf = _stock._pfread(CONF_PF)
-
-if r < 0:
-    logging.warning("Failed to open configuration parameter file %s." %
-            repr(CONF_PF))
-    config = _config
-else:
-    config = _stock._pfget(confpf, '')
+import config
 
 
 class ROOT(Resource):
@@ -101,27 +83,25 @@ class DLMonOneStn(ROOT):
 
 class App(object):
     def run(self):
+        cfg = config.Config()
         root = ROOT()
         dlstatuses = {}
-        for dlstatus_name, v in config.iteritems():
+        for dlstatus_name, srcs in cfg.instances.iteritems():
             dlstatus = DLStatus()
             dlmon = DLMon(dlstatus_name, dlstatus)
             dlstatuses[dlstatus_name] = dlstatus
-            for orbname,match,rej in v:
-                match = match if match is not '' else DEFAULT_MATCH
-                rej = rej
-                source = DLSource(orbname,match,rej)
+            for srcname,srccfg in srcs.iteritems():
+                source = DLSource(srcname, srccfg.match, srccfg.reject)
                 source.add_sink(dlstatus.update_status)
             log.msg("New dlstatus: %s" % dlstatus_name)
             root.putChild(dlstatus_name, dlmon)
-
 
         log.msg('Build as site object:')
         website = Site( root )
         log.msg('\t\t\t\t\t=> OK')
 
         log.msg('Setup TCP port:')
-        reactor.listenTCP(7000, website)
+        reactor.listenTCP(cfg.port, website)
         log.msg('\t\t\t\t\t=> OK')
 
         log.msg('Run reactor:')

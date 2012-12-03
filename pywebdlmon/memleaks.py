@@ -1,4 +1,8 @@
 #!/usr/bin/env python
+"""
+A contrived example of how to leak lots of memory with the Antelope Python
+APIs.
+"""
 
 from contextlib import contextmanager
 import os

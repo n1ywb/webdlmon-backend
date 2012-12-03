@@ -1,4 +1,9 @@
 #!/usr/bin/env python
+"""Python Web DLMON Daemon
+
+This is the twisted.web application.
+"""
+
 import functools
 import traceback
 from optparse import OptionParser
@@ -24,6 +29,11 @@ import config
 
 
 class ROOT(Resource):
+    """Application root.
+
+    Doesn't really do anything.
+    """
+
     def getChild(self, name, request):
         if name == '':
             return self
@@ -39,14 +49,20 @@ class ROOT(Resource):
 
 
 class DLMon(ROOT):
+    """A particular named DLMon instance."""
+
     def __init__(self, name, dlstatus):
         ROOT.__init__(self)
         self.name = name
         self.dlstatus = dlstatus
-        # This is a little ugly but supports compartmentalization
+        # Monkeypatch dlstatus with my own new-station callback.
         dlstatus.new_stn_cb = self.new_stn
 
     def new_stn(self, dlstatus, id):
+        """Magic new station callback method.
+
+        self.dlstatus calls this method whenever it hears a new station.
+        """
         print "%s new station %s" % (self.name, id)
         dlmon = DLMonOneStn(dlstatus, id)
         self.putChild(id, dlmon)
@@ -63,6 +79,8 @@ class DLMon(ROOT):
 
 
 class DLMonOneStn(ROOT):
+    """Endpoint for a particular station heard by a particular dlmon."""
+
     def __init__(self, dlstatus, id):
         """id == station id"""
         ROOT.__init__(self)
@@ -82,7 +100,9 @@ class DLMonOneStn(ROOT):
 
 
 class App(object):
+    """The twisted.web application."""
     def run(self, options):
+        """Run the app. Options as parsed by optparse."""
         log.startLogging(sys.stdout)
         cfg = config.Config(options)
         root = ROOT()
@@ -107,5 +127,4 @@ class App(object):
 
         log.msg('Run reactor:')
         reactor.run()
-
 

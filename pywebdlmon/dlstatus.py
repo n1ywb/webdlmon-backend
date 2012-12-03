@@ -1,4 +1,6 @@
 #!/usr/bin/env python
+"""Datalogger Status"""
+
 import logging
 from pprint import pformat
 import json
@@ -17,23 +19,31 @@ logging.basicConfig(level=logging.DEBUG)
 REAP_TIMEOUT = 2
 DEFAULT_MATCH = r'.*/pf/(st|vtw)'
 
-SORTORDERS = {
-    'yes': 4,
-    'waiting': 4,
-    'su': 1,
-    'reg': 1,
-    'sleeping': 1,
-    'hibernating': 1,
-    'no': 1,
-    'stopped': 0,
-}
-
-
-import gc
-
 pktno = 0
 
+
+def pfstring_to_pfdict(pfstring):
+    """Return a dictionary from the 'string' field of a status packet which
+    contains a parameter file."""
+    # TODO Should this be a method on DLSource since that's the only place it's
+    # used?
+    pfstring = pfstring.strip('\0')
+    pfptr = _stock._pfnew()
+    try:
+        r = _stock._pfcompile(pfstring, pfptr)
+        if r != 0: raise Exception("pfcompile failed")
+        pfdict = _stock._pfget(pfptr, None)
+        return pfdict
+    finally:
+        _stock._pffree(pfptr)
+
+
 class DLSource(object):
+    """Represents a datalogger status data source, i.e. an orb.
+
+    DLSource objects are normally associated with one or more data-sink
+    objects, whose callback(s) are called with new data.
+    """
     def __init__(self, orbname, match, rej):
         myorb = Orb( orbname, "r&" )
         myorb.select(match)
@@ -48,6 +58,7 @@ class DLSource(object):
     def __exit__(self, exc_type, exc_value, traceback):
         self.close()
     def reap_eb(self,failure):
+        """Orbreap errback method."""
         print "in reap_eb"
         failure.trap(OrbIncomplete)
         d = deferToThread(self.orb.reap_timeout, REAP_TIMEOUT)
@@ -55,8 +66,10 @@ class DLSource(object):
         d.addErrback(self.reap_eb)
         return None
     def add_sink(self, sink_func):
+        """Registers the data-sink's callback function."""
         self.sinks.append(sink_func)
     def reap_cb(self, r):
+        """Orbreap callback method."""
         print "in reap_cb"
         global pktno
         pktid, srcname, time, raw_packet, nbytes = r
@@ -75,7 +88,6 @@ class DLSource(object):
                     pfdict = packet.pfdict
                 for sink in self.sinks:
                     sink(pfdict)
-        gc.collect()
         d = deferToThread(self.orb.reap_timeout, REAP_TIMEOUT)
         d.addCallback(self.reap_cb)
         d.addErrback(self.reap_eb)
@@ -84,6 +96,7 @@ class DLSource(object):
 
 
 class DLStatus(object):
+    """Represents a particular named DLMON instance."""
     def __init__(self):
         self.seen_stns = set()
         self.status = {
@@ -95,7 +108,9 @@ class DLStatus(object):
 
     @staticmethod
     def new_stn_cb(dlmon, id):
-        """Monkey patch over this as necessary."""
+        """This method is called whenever a new station is heard.
+
+        Monkey patch this with your own callback."""
         pass
 
     def update_status(self, pfdict):
@@ -106,24 +121,25 @@ class DLStatus(object):
                 self.seen_stns.add(stn)
                 self.new_stn_cb(self, stn)
             net, sep, stnonly = stn.partition('_')
-            sort_order = str(SORTORDERS[status['con']]) + stnonly
             self.status['dataloggers'][stn] = {
-                    'sortorder': sort_order,
                     'name': stn,
                     'values': status }
         self.status['metadata']['timestamp'] = str(int(time.mktime(
                 datetime.utcnow().timetuple())))
 
     def to_json(self):
+        """Return state of all stations in json format."""
         status = dict(self.status)
         status['dataloggers'] = status['dataloggers'].values()
         return json.dumps(status, sort_keys=True, indent=4)
 
     def stn_to_json(self, id):
+        """Return state of a particular station in json format."""
         stn = self.status['dataloggers'][id]
         return json.dumps(stn, sort_keys=True, indent=4)
 
     def pfmorph(self, pfdict):
+        """Apply arcane transformations to incoming status data."""
         dls  = dict()
         if pfdict.has_key('dls'):
             dls = pfdict['dls']
@@ -144,14 +160,4 @@ class DLStatus(object):
         return pfdict
 
 
-def pfstring_to_pfdict(pfstring):
-    pfstring = pfstring.strip('\0')
-    pfptr = _stock._pfnew()
-    try:
-        r = _stock._pfcompile(pfstring, pfptr)
-        if r != 0: raise Exception("pfcompile failed")
-        pfdict = _stock._pfget(pfptr, None)
-        return pfdict
-    finally:
-        _stock._pffree(pfptr)
 

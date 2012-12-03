@@ -1,4 +1,8 @@
 #!/usr/bin/env bash
+# 
+# Start cmd, wait until timeout, kill process, repeat.
+#
+# Useful for periodically restarting a program with a memory leak.
 
 TIMEOUT=600
 CMD="./pywebdlmond"

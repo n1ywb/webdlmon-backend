@@ -1,6 +1,7 @@
 #!/usr/bin/env python
+# Copyright 2012 UC Regents
 """
-Copyright 2012 UC Regents
+Demonstrate various bugs in the Antelope Python API.
 
 Usage:
 [jeff@anfdevl pydlmon]$ python ./bug.py -v

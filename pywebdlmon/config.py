@@ -1,4 +1,11 @@
 #!/usr/bin/env python
+"""
+Configuration reading module.
+
+Supports reading configuration from a prameter file and marshalling those data
+into useful objects which the application can use.
+"""
+
 import sys
 #import datetime
 from pprint import pprint
@@ -22,6 +29,12 @@ DEFAULTS = dict(
 
 
 class SourceConfig(object):
+    """Represents a data source, usually an orb.
+
+    match = match string, always populated
+    reject = reject string, always populated
+    """
+
     def __init__(self, global_config, source_config_dict):
         self.match = source_config_dict.get('match', global_config.match)
         self.reject = source_config_dict.get('reject', global_config.reject)
@@ -70,6 +83,13 @@ class Config(object):
             self.instances[instname] = sources
 
     def set_val(self, k, pf, options=None):
+        """Sets the attribute 'k'.
+
+        Look first in options, then in pf.
+
+        Always converts type to int if at all possible, which is kludgy, but
+        acceptable at the moment.
+        """
         v = None
         if options is not None:
             try:

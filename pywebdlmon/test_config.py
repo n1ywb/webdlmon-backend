@@ -1,4 +1,6 @@
 #!/usr/bin/env python
+"""Test code for config.py."""
+
 import sys
 from pprint import pprint
 import os

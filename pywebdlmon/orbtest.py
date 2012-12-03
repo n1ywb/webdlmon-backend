@@ -1,4 +1,7 @@
 #!/usr/bin/env python
+"""
+Starting orb servers for use with tests.
+"""
 
 import unittest
 

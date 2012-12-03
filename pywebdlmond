@@ -1,4 +1,6 @@
 #!/usr/bin/env python
+"""Script to start Python Web DLMON backend daemon."""
+
 import sys
 from optparse import OptionParser
 

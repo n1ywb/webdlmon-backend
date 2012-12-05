@@ -1,0 +1,16 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8"/>
+<script>
+    var socket = new WebSocket("ws://anfdevl.ucsd.edu:6998/");
+    socket.onopen = function (event) {
+        socket.onmessage = function (event) {
+                console.log(event.data);
+        }
+        socket.send(JSON.stringify({instance: "dlmon"}));
+      };
+</script>
+</head>
+</html>
+

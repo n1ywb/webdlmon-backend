@@ -7,6 +7,7 @@ import json
 from datetime import datetime
 import time
 
+from twisted.python import log
 from twisted.internet.threads import deferToThread
 
 from kudu.exc import OrbIncomplete
@@ -59,7 +60,6 @@ class DLSource(object):
         self.close()
     def reap_eb(self,failure):
         """Orbreap errback method."""
-        print "in reap_eb"
         failure.trap(OrbIncomplete)
         d = deferToThread(self.orb.reap_timeout, REAP_TIMEOUT)
         d.addCallback(self.reap_cb)
@@ -70,21 +70,18 @@ class DLSource(object):
         self.sinks.append(sink_func)
     def reap_cb(self, r):
         """Orbreap callback method."""
-        print "in reap_cb"
         global pktno
         pktid, srcname, time, raw_packet, nbytes = r
         if pktid is not None:
             pktno += 1
-            logging.debug("orbreap packet #%d: %d bytes" % (pktno, nbytes))
+            log.msg("orbreap packet #%d: %d bytes" % (pktno, nbytes))
             packet = Pkt(srcname, time, raw_packet)
             pkttypename = packet.pkttype['name']
             if pkttypename in ('st', 'pf', 'stash'):
                 pfstring = packet.string
                 if pfstring is not None and pfstring != '':
-                    logging.debug("calling pfstring_to_pfdict(pfstring)")
                     pfdict = pfstring_to_pfdict(pfstring)
                 else:
-                    logging.debug("calling stock.pfget(packet.pfptr, '')")
                     pfdict = packet.pfdict
                 for sink in self.sinks:
                     sink(pfdict)
@@ -98,6 +95,7 @@ class DLSource(object):
 class DLStatus(object):
     """Represents a particular named DLMON instance."""
     def __init__(self):
+        self.streams = set()
         self.seen_stns = set()
         self.status = {
             'metadata': {
@@ -115,6 +113,7 @@ class DLStatus(object):
 
     def update_status(self, pfdict):
         """Updates status from pfdict"""
+        timestamp = str(int(time.mktime(datetime.utcnow().timetuple())))
         pfdict = self.pfmorph(pfdict)
         for stn,status in pfdict['dls'].items():
             if not stn in self.seen_stns:
@@ -124,8 +123,18 @@ class DLStatus(object):
             self.status['dataloggers'][stn] = {
                     'name': stn,
                     'values': status }
-        self.status['metadata']['timestamp'] = str(int(time.mktime(
-                datetime.utcnow().timetuple())))
+            self.stream_data(stn, status, timestamp)
+        self.status['metadata']['timestamp'] = timestamp
+
+    def stream_data(self, stn, status, timestamp):
+        # write status to each stream; catch excs and remove offending
+        # stream; what about errbacks here?
+        for stream in set(self.streams):
+            try:
+                stream.transport.write(json.dumps(dict(name=stn,values=status,timestamp=timestamp)))
+            except Exception, e:
+                self.streams.discard(stream)
+                log.err("Error writing to stream")
 
     def to_json(self):
         """Return state of all stations in json format."""
@@ -159,5 +168,5 @@ class DLStatus(object):
         pfdict['dls'] = dls
         return pfdict
 
-
-
+    def add_stream(self, stream):
+        self.streams.add(stream)

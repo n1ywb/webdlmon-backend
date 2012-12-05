@@ -19,6 +19,7 @@ from twisted.python import log
 from twisted.internet import reactor
 from twisted.web.resource import Resource
 from twisted.web.server import Site
+from twisted.web import static
 
 sys.path.append(os.environ['ANTELOPE'] + '/data/python')
 
@@ -26,6 +27,12 @@ from antelope import _stock
 
 from dlstatus import DLStatus, DLSource, DEFAULT_MATCH
 import config
+
+# Twisted websockets
+from twisted.application import internet
+from twisted.application.service import Application, Service
+
+from txws import WebSocketFactory
 
 
 class ROOT(Resource):
@@ -63,7 +70,7 @@ class DLMon(ROOT):
 
         self.dlstatus calls this method whenever it hears a new station.
         """
-        print "%s new station %s" % (self.name, id)
+        log.msg("%s new station %s" % (self.name, id))
         dlmon = DLMonOneStn(dlstatus, id)
         self.putChild(id, dlmon)
 
@@ -98,6 +105,49 @@ class DLMonOneStn(ROOT):
         except Exception, e:
 	    raise
 
+# Websockets
+STATIC_ROOT='html'
+WEBSOCKETS_PORT=6998
+
+import json
+import time
+
+from twisted.internet.protocol import Factory, Protocol
+
+
+class UnknownInstance(Exception): pass
+
+class Stream(Protocol):
+    def __init__(self, start_stream_cb):
+        self.start_stream_cb = start_stream_cb
+
+    def connectionMade(self):
+        log.msg("Connected on websockets port")
+
+    def dataReceived(self, data):
+        try:
+            obj = json.loads(data)
+            name = obj['instance']
+        except Exception:
+            self.transport.write(json.dumps({'error': 400}))
+            self.transport.loseConnection()
+            return
+        try:
+            self.start_stream_cb(self, name)
+        except UnknownInstance, e:
+            self.transport.write(json.dumps({'error': 404}))
+            self.transport.loseConnection()
+        except Exception, e:
+            self.transport.write(json.dumps({'error': 500}))
+            self.transport.loseConnection()
+
+
+class StreamFactory(Factory):
+    def __init__(self, start_stream_cb):
+        self.start_stream_cb = start_stream_cb
+    def buildProtocol(self, addr):
+        return Stream(self.start_stream_cb)
+
 
 class App(object):
     """The twisted.web application."""
@@ -106,6 +156,7 @@ class App(object):
         log.startLogging(sys.stdout)
         cfg = config.Config(options)
         root = ROOT()
+        root.putChild('static', static.File(STATIC_ROOT))
         dlstatuses = {}
         for dlstatus_name, srcs in cfg.instances.iteritems():
             dlstatus = DLStatus()
@@ -117,6 +168,22 @@ class App(object):
             log.msg("New dlstatus: %s" % dlstatus_name)
             root.putChild(dlstatus_name, dlmon)
 
+        def start_stream_cb(stream, name):
+            try:
+                dlstatuses[name].add_stream(stream)
+            except KeyError:
+                log.err("404 not found: %r " % name)
+                raise UnknownInstance(name)
+            else:
+                log.msg("streaming %r" % name)
+
+        # websockets
+        # Somehow the websocket server needs to be commanded to send updated
+        # state data.
+        # Sending a keepalive might be good too
+        reactor.listenTCP(WEBSOCKETS_PORT, WebSocketFactory(StreamFactory(start_stream_cb)))
+
+        # website
         log.msg('Build as site object:')
         website = Site( root )
         log.msg('\t\t\t\t\t=> OK')

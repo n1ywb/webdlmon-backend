@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"/>
 <script>
-    var socket = new WebSocket("ws://anfdevl.ucsd.edu:6999/ws/dlmon");
+    var socket = new WebSocket("ws://anfdevl.ucsd.edu:7000/ws/dlmon");
     socket.onopen = function (event) {
         socket.onmessage = function (event) {
             var oNewNode = document.createElement("LI");
@@ -12,7 +12,6 @@
             oNewNode.appendChild(text_node);
             console.log(event.data);
         }
-        socket.send(JSON.stringify({instance: "dlmon"}));
       };
 </script>
 </head>

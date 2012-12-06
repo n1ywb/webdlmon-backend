@@ -154,25 +154,6 @@ class Stream(Protocol):
             self.transport.write(json.dumps({'error': 500}))
             self.transport.loseConnection()
 
-    def dataReceived(self, data):
-        log.msg("Websockets data received, loc %r" %
-                self.transport.location)
-        try:
-            obj = json.loads(data)
-            name = obj['instance']
-        except Exception:
-            self.transport.write(json.dumps({'error': 400}))
-            self.transport.loseConnection()
-            return
-        try:
-            self.start_stream_cb(self, name)
-        except UnknownInstance, e:
-            self.transport.write(json.dumps({'error': 404}))
-            self.transport.loseConnection()
-        except Exception, e:
-            self.transport.write(json.dumps({'error': 500}))
-            self.transport.loseConnection()
-
 
 class StreamFactory(Factory):
     def __init__(self, start_stream_cb):

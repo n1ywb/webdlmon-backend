@@ -9,7 +9,7 @@ import traceback
 from optparse import OptionParser
 import sys
 #import datetime
-from pprint import pprint
+from pprint import pprint, pformat
 #from subprocess import Popen,PIPE
 import os
 import os.path
@@ -122,9 +122,41 @@ class Stream(Protocol):
         self.start_stream_cb = start_stream_cb
 
     def connectionMade(self):
-        log.msg("Connected on websockets port")
+        log.msg("Connected on websockets port, loc: %r" %
+                self.transport.location)
+        # monkey patch txws to notify us after it parses the location field
+        oldValidateHeaders = self.transport.validateHeaders
+        def wrap(*args, **kwargs):
+            r = oldValidateHeaders(*args, **kwargs)
+            if r: self.headersValidated()
+            return r
+        self.transport.validateHeaders = wrap
+
+    def headersValidated(self):
+        log.msg("Websocket headers validated, loc: %r" %
+                self.transport.location)
+        # start streaming?
+        try:
+            path = self.transport.location.split('/')
+            bl1, ws, name = path
+        except Exception:
+            self.transport.write(json.dumps({'error': 400,
+                'path': self.transport.location}))
+            self.transport.loseConnection()
+            return
+        try:
+            self.start_stream_cb(self, name)
+        except UnknownInstance, e:
+            self.transport.write(json.dumps({'error': 404,
+                'path': self.transport.location}))
+            self.transport.loseConnection()
+        except Exception, e:
+            self.transport.write(json.dumps({'error': 500}))
+            self.transport.loseConnection()
 
     def dataReceived(self, data):
+        log.msg("Websockets data received, loc %r" %
+                self.transport.location)
         try:
             obj = json.loads(data)
             name = obj['instance']

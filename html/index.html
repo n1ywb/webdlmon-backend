@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"/>
 <script>
-    var socket = new WebSocket("ws://anfdevl.ucsd.edu:6999/ws");
+    var socket = new WebSocket("ws://anfdevl.ucsd.edu:6999/ws/dlmon");
     socket.onopen = function (event) {
         socket.onmessage = function (event) {
             var oNewNode = document.createElement("LI");

@@ -3,14 +3,22 @@
 <head>
 <meta charset="utf-8"/>
 <script>
-    var socket = new WebSocket("ws://anfdevl.ucsd.edu:6998/");
+    var socket = new WebSocket("ws://anfdevl.ucsd.edu:6999/ws");
     socket.onopen = function (event) {
         socket.onmessage = function (event) {
-                console.log(event.data);
+            var oNewNode = document.createElement("LI");
+            oList.appendChild(oNewNode);
+            var text_node = document.createTextNode(event.data);
+            oNewNode.appendChild(text_node);
+            console.log(event.data);
         }
         socket.send(JSON.stringify({instance: "dlmon"}));
       };
 </script>
 </head>
+<body>
+    <ul ID = oList>
+    </ul>
+</body>
 </html>
 

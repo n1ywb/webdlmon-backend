@@ -149,6 +149,12 @@ class StreamFactory(Factory):
         return Stream(self.start_stream_cb)
 
 
+# StreamProxy
+from streamprox.proxy import BufferingProxyFactory
+from streamprox.packet_buffer import PacketBuffer
+from streamprox.dispatcher import ExampleDispatcher
+
+
 class App(object):
     """The twisted.web application."""
     def run(self, options):
@@ -168,6 +174,11 @@ class App(object):
             log.msg("New dlstatus: %s" % dlstatus_name)
             root.putChild(dlstatus_name, dlmon)
 
+        # website
+        log.msg('Build as site object:')
+        website = Site( root )
+        log.msg('\t\t\t\t\t=> OK')
+
         def start_stream_cb(stream, name):
             try:
                 dlstatuses[name].add_stream(stream)
@@ -181,15 +192,23 @@ class App(object):
         # Somehow the websocket server needs to be commanded to send updated
         # state data.
         # Sending a keepalive might be good too
-        reactor.listenTCP(WEBSOCKETS_PORT, WebSocketFactory(StreamFactory(start_stream_cb)))
-
-        # website
-        log.msg('Build as site object:')
-        website = Site( root )
-        log.msg('\t\t\t\t\t=> OK')
-
         log.msg('Setup TCP port:')
-        reactor.listenTCP(cfg.port, website, interface=cfg.bind_address)
+
+        factory = BufferingProxyFactory()
+        factory.buffer_factory = PacketBuffer
+
+        websocketfactory = WebSocketFactory(StreamFactory(start_stream_cb))
+
+        # route /ws to websockets, everything else including / to http
+        ExampleDispatcher.prefix1 = "/ws"
+        ExampleDispatcher.site1 = websocketfactory
+
+        ExampleDispatcher.prefix2 = "/"
+        ExampleDispatcher.site2 = website
+
+        factory.dispatcher_factory = ExampleDispatcher
+
+        reactor.listenTCP(cfg.port, factory, interface=cfg.bind_address)
         log.msg('\t\t\t\t\t=> OK')
 
         log.msg('Run reactor:')

@@ -7,6 +7,9 @@ export PYTHONPATH=$PYTHONPATH:$HOME/kudu
 # web services and websockets services appear on the same port.
 export PYTHONPATH=$PYTHONPATH:$HOME/StreamProx
 
+# twisted websockets
+export PYTHONPATH=$PYTHONPATH:$HOME/txWS
+
 # Config PF location
 export PFPATH=$PFPATH:`pwd`/etc
 

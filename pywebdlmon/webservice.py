@@ -35,11 +35,14 @@ from twisted.application.service import Application, Service
 from txws import WebSocketFactory
 
 
-class ROOT(Resource):
-    """Application root.
+from mako.template import Template
+from mako.lookup import TemplateLookup
 
-    Doesn't really do anything.
-    """
+templates = TemplateLookup(directories=['pywebdlmon'])
+
+
+class ROOT(Resource):
+    """Application root."""
 
     def getChild(self, name, request):
         if name == '':
@@ -47,12 +50,13 @@ class ROOT(Resource):
         return Resource.getChild(self, name, request)
 
     def render(self, request):
+        mytemplate = templates.get_template('root.html')
         log.msg('Got request: %s' % request)
         args = request.uri.split("/")[1:]
         log.msg('Got args: %s' % args)
         request.setHeader("content-type", "text/html")
-        request.setHeader("response-code", 500)
-        return "Unknown query type:(%s)" % args
+        request.setHeader("response-code", 200)
+        return str(mytemplate.render(dlstatuses=self.dlstatuses))
 
 
 class DLMon(ROOT):
@@ -175,8 +179,9 @@ class App(object):
         log.startLogging(sys.stdout)
         cfg = config.Config(options)
         root = ROOT()
-        root.putChild('static', static.File(STATIC_ROOT))
         dlstatuses = {}
+        root.dlstatuses = dlstatuses
+        root.putChild('static', static.File(STATIC_ROOT))
         for dlstatus_name, srcs in cfg.instances.iteritems():
             dlstatus = DLStatus()
             dlmon = DLMon(dlstatus_name, dlstatus)

@@ -72,12 +72,11 @@ class Controller(object):
 def get_dispatcher(dlstatuses or whatever):
     c = Controller(cfg, dlstatuses)
     d = Dispatcher()
-    d.connect('index',             '/', c, action='index')
-    d.connect('instances',         '/{format}/instances', c, action='instances')
-    d.connect('instance_status',   '/{format}/instances/{instance}/status', c,
-        action='instance_status')
-    d.connect('stations',          '/{format}/instances/{instance}/stations', c,
-        action='instance_stations')
-    d.connect('station_status',    '/{format}/instances/{instance}/stations/{station}/status', c,
-        action='station_status')
+    def connect(name, url):
+        d.connect(name, url, c, action=name)
+    connect('index',           '/')
+    connect('instances',       '/{format}/instances')
+    connect('instance_status', '/{format}/instances/{instance}/status')
+    connect('stations',        '/{format}/instances/{instance}/stations')
+    connect('station_status',  '/{format}/instances/{instance}/stations/{station}/status')
     return d

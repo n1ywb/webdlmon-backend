@@ -74,6 +74,9 @@ class DLMon(ROOT):
 
         self.dlstatus calls this method whenever it hears a new station.
         """
+        # should probably use a deferred instead of a plain old callback
+        # also adding these nodes at all is questionable; might be better to
+        # have one concrete node handle requests for virtual station nodes
         log.msg("%s new station %s" % (self.name, id))
         dlmon = DLMonOneStn(dlstatus, id)
         self.putChild(id, dlmon)

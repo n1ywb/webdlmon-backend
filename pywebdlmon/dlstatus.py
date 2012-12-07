@@ -92,6 +92,9 @@ class DLSource(object):
         self.orb.close()
 
 
+class UnknownStation(Exception): pass
+
+
 class DLStatus(object):
     """Represents a particular named DLMON instance."""
     def __init__(self):
@@ -146,6 +149,20 @@ class DLStatus(object):
         """Return state of a particular station in json format."""
         stn = self.status['dataloggers'][id]
         return json.dumps(stn, sort_keys=True, indent=4)
+
+    def to_jsonable(self):
+        """Return state of all stations in json format."""
+        status = dict(self.status)
+        status['dataloggers'] = status['dataloggers'].values()
+        return status
+
+    def stn_to_jsonable(self, id):
+        """Return state of a particular station in json format."""
+        try:
+            stn = self.status['dataloggers'][id]
+        except KeyError:
+            raise UnknownStation()
+        return stn
 
     def pfmorph(self, pfdict):
         """Apply arcane transformations to incoming status data."""

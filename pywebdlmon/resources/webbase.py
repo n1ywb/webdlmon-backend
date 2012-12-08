@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+import json
+
 from twisted.web.resource import Resource
 from txroutes import Dispatcher
 from mako.template import Template
@@ -70,13 +72,10 @@ class Controller(object):
             dlstatus = self.dlstatuses[instance]
         except KeyError:
             return self._error(request, 404, "Unknown DLMon Instance: %r" % instance)
-        dataloggers = dlstatus.status['dataloggers'] # 500 if this fails
+        dataloggers = dlstatus.status['dataloggers']
         try:
-            # TODO this next line is broken, possibly because of unicode
             data = dataloggers[station.decode('utf8')]
         except KeyError:
-            # TODO set status code to 404
-            # TODO return an error template instead of a dumb string
             return self._error(request, 404, "Unknown Station: %r" % station)
         return self._render(request, format, template='station_status',
                 data=data, instance=instance, station=station)

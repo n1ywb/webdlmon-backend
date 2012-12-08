@@ -2,7 +2,13 @@
 <%!
 import json
 %>
+
 <h2>${instance} ${station} Status</h2>
+
+<p>
+    <a href="/json/instances/${instance}/stations/${station}/status">json</a>
+</p>
+
 <pre>
 ${json.dumps(data, indent=4, sort_keys=True)}
 </pre>

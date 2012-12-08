@@ -3,6 +3,11 @@
 import json
 %>
 <h2>${instance} Stations</h2>
+
+<p>
+    <a href="/json/instances/${instance}/stations">json</a>
+</p>
+
 <ul>
     % for station in data:
     <li>
@@ -12,3 +17,4 @@ import json
     </li>
     % endfor
 </ul>
+

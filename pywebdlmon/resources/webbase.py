@@ -10,7 +10,7 @@ from mako.lookup import TemplateLookup
 
 class Controller(object):
     def __init__(self, cfg, dlstatuses):
-        self.templates = TemplateLookup(directories=['pywebdlmon'])
+        self.templates = TemplateLookup(directories=['templates'])
         self.cfg = cfg
         self.dlstatuses = dlstatuses
 

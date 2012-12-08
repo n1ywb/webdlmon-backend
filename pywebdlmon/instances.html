@@ -1,0 +1,14 @@
+<%inherit file="template.html"/>
+<h2>Named DLMon Instances</h2>
+<ul>
+% for instance in data:
+<li>
+    ${instance}
+    <ul>
+        <li><a href="/html/instances/${instance}/status">Full status</a></li>
+        <li><a href="/html/instances/${instance}/stations">Station list</a></li>
+    </ul>
+</li>
+% endfor
+</ul>
+

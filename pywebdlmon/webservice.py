@@ -28,89 +28,14 @@ from antelope import _stock
 from dlstatus import DLStatus, DLSource, DEFAULT_MATCH
 import config
 
+from resources.webbase import get_dispatcher
+
 # Twisted websockets
 from twisted.application import internet
 from twisted.application.service import Application, Service
 
 from txws import WebSocketFactory
 
-
-from mako.template import Template
-from mako.lookup import TemplateLookup
-
-templates = TemplateLookup(directories=['pywebdlmon'])
-
-
-class ROOT(Resource):
-    """Application root."""
-
-    def getChild(self, name, request):
-        if name == '':
-            return self
-        return Resource.getChild(self, name, request)
-
-    def render(self, request):
-        mytemplate = templates.get_template('root.html')
-        log.msg('Got request: %s' % request)
-        args = request.uri.split("/")[1:]
-        log.msg('Got args: %s' % args)
-        request.setHeader("content-type", "text/html")
-        request.setHeader("response-code", 200)
-        return str(mytemplate.render(dlstatuses=self.dlstatuses))
-
-
-class DLMon(ROOT):
-    """A particular named DLMon instance."""
-
-    def __init__(self, name, dlstatus):
-        ROOT.__init__(self)
-        self.name = name
-        self.dlstatus = dlstatus
-        # Monkeypatch dlstatus with my own new-station callback.
-        dlstatus.new_stn_cb = self.new_stn
-
-    def new_stn(self, dlstatus, id):
-        """Magic new station callback method.
-
-        self.dlstatus calls this method whenever it hears a new station.
-        """
-        # should probably use a deferred instead of a plain old callback
-        # also adding these nodes at all is questionable; might be better to
-        # have one concrete node handle requests for virtual station nodes
-        log.msg("%s new station %s" % (self.name, id))
-        dlmon = DLMonOneStn(dlstatus, id)
-        self.putChild(id, dlmon)
-
-    def render(self, request):
-        try:
-	    request.setHeader("content-type", "application/json")
-	    if request.args.has_key('callback'):
-		    request.setHeader("content-type", "application/javascript")
-		    return request.args['callback'][0] + '(' + self.dlstatus.to_json() + ')'
-            return self.dlstatus.to_json()
-        except Exception, e:
-	    raise
-
-
-class DLMonOneStn(ROOT):
-    """Endpoint for a particular station heard by a particular dlmon."""
-
-    def __init__(self, dlstatus, id):
-        """id == station id"""
-        ROOT.__init__(self)
-        self.dlstatus = dlstatus
-        self.id = id
-
-    def render(self, request):
-        f = functools.partial(self.dlstatus.stn_to_json, self.id)
-        try:
-	    request.setHeader("content-type", "application/json")
-	    if request.args.has_key('callback'):
-		    request.setHeader("content-type", "application/javascript")
-		    return request.args['callback'][0] + '(' + f() + ')'
-            return f()
-        except Exception, e:
-	    raise
 
 
 # Websockets
@@ -182,25 +107,23 @@ class App(object):
         """Run the app. Options as parsed by optparse."""
         log.startLogging(sys.stdout)
         cfg = config.Config(options)
-        root = ROOT()
         dlstatuses = {}
-        root.dlstatuses = dlstatuses
-        root.putChild('static', static.File(STATIC_ROOT))
         for dlstatus_name, srcs in cfg.instances.iteritems():
             dlstatus = DLStatus()
-            dlmon = DLMon(dlstatus_name, dlstatus)
             dlstatuses[dlstatus_name] = dlstatus
             for srcname,srccfg in srcs.iteritems():
                 source = DLSource(srcname, srccfg.match, srccfg.reject)
+                # TODO use deferreds instead?
                 source.add_sink(dlstatus.update_status)
             log.msg("New dlstatus: %s" % dlstatus_name)
-            root.putChild(dlstatus_name, dlmon)
 
         # website
         log.msg('Build as site object:')
-        website = Site( root )
+        dispatcher = get_dispatcher(cfg, dlstatuses)
+        website = Site( dispatcher )
         log.msg('\t\t\t\t\t=> OK')
 
+        # TODO deferrable?
         def start_stream_cb(stream, name):
             try:
                 dlstatuses[name].add_stream(stream)

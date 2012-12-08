@@ -1,0 +1,9 @@
+<%inherit file="template.html"/>
+<%!
+import json
+%>
+<h2>${instance} Status</h2>
+<pre>
+${json.dumps(data, indent=4, sort_keys=True)}
+</pre>
+

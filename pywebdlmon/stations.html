@@ -1,0 +1,14 @@
+<%inherit file="template.html"/>
+<%!
+import json
+%>
+<h2>${instance} Stations</h2>
+<ul>
+    % for station in data:
+    <li>
+        <a href="/html/instances/${instance}/stations/${station}/status">
+            ${station}
+        </a>
+    </li>
+    % endfor
+</ul>

@@ -132,23 +132,13 @@ class DLStatus(object):
     def stream_data(self, stn, status, timestamp):
         # write status to each stream; catch excs and remove offending
         # stream; what about errbacks here?
+        # move this method somewhere else and use deferrables
         for stream in set(self.streams):
             try:
                 stream.transport.write(json.dumps(dict(name=stn,values=status,timestamp=timestamp)))
             except Exception, e:
                 self.streams.discard(stream)
                 log.err("Error writing to stream")
-
-    def to_json(self):
-        """Return state of all stations in json format."""
-        status = dict(self.status)
-        status['dataloggers'] = status['dataloggers'].values()
-        return json.dumps(status, sort_keys=True, indent=4)
-
-    def stn_to_json(self, id):
-        """Return state of a particular station in json format."""
-        stn = self.status['dataloggers'][id]
-        return json.dumps(stn, sort_keys=True, indent=4)
 
     def to_jsonable(self):
         """Return state of all stations in json format."""

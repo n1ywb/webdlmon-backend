@@ -10,8 +10,11 @@ export PYTHONPATH=$PYTHONPATH:$HOME/StreamProx
 # twisted websockets
 export PYTHONPATH=$PYTHONPATH:$HOME/txWS
 
-# twisted websockets
+# Mako templates
 export PYTHONPATH=$PYTHONPATH:$HOME/Mako-0.7.3
+
+# txroutes
+export PYTHONPATH=$PYTHONPATH:$HOME/txroutes
 
 # Config PF location
 export PFPATH=$PFPATH:`pwd`/etc

@@ -5,11 +5,17 @@ import json
 <h2>${instance} Stations</h2>
 
 <p>
-    <a href="/json/instances/${instance}/stations">json</a>
+Other Formats:
+<ul>
+    % for k,v in data['formats'].items():
+        <li><a href="${v}">${k}</a></li>
+    % endfor
+</ul>
 </p>
 
+Stations:
 <ul>
-    % for station in data:
+    % for station in data['stations']:
     <li>
         <a href="/html/instances/${instance}/stations/${station}/status">
             ${station}

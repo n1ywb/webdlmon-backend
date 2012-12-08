@@ -49,8 +49,15 @@ class Controller(object):
         else:
             return self._error(request, 400, "Unknown format %r" % format)
 
+    def root(self, request):
+        return self.index(request, 'html')
+
     def index(self, request, format):
         data = dict(
+                    formats=dict(
+                        html='/html',
+                        json='/json',
+                    ),
                    resources=dict(
                        instances=dict(
                            html='/html/instances',
@@ -88,8 +95,13 @@ class Controller(object):
             dlstatus = self.dlstatuses[instance]
         except KeyError:
             return self._error(request, 404, "Unknown DLMon Instance: %r" % instance)
-        data = dict(dlstatus.status)
-        data['dataloggers'] = data['dataloggers'].values()
+        data = dict(instance_status=dict(dlstatus.status))
+        data['formats'] = dict(
+            # add instance name to urls
+            html='/html/instances/%s/status' % instance,
+            json='/json/instances/%s/status' % instance,
+        )
+        data['instance_status']['dataloggers'] = data['instance_status']['dataloggers'].values()
         return self._render(request, format, template='instance_status',
                 data=data, instance=instance)
 
@@ -98,7 +110,12 @@ class Controller(object):
             dlstatus = self.dlstatuses[instance]
         except KeyError:
             return self._error(request, 404, "Unknown DLMon Instance: %r" % instance)
-        data=dlstatus.status['dataloggers'].keys()
+        data=dict(stations=dlstatus.status['dataloggers'].keys())
+        data['formats'] = dict(
+            # add instance name to urls
+            html='/html/instances/%s/stations' % instance,
+            json='/json/instances/%s/stations' % instance,
+        )
         return self._render(request, format, template='stations', data=data,
                 instance=instance)
 
@@ -109,9 +126,15 @@ class Controller(object):
             return self._error(request, 404, "Unknown DLMon Instance: %r" % instance)
         dataloggers = dlstatus.status['dataloggers']
         try:
-            data = dataloggers[station.decode('utf8')]
+            data = dict(station_status=dataloggers[station.decode('utf8')])
         except KeyError:
             return self._error(request, 404, "Unknown Station: %r" % station)
+        # add formats
+        data['formats'] = dict(
+            # add instance name to urls
+            html='/html/instances/%s/stations/%s/status' % (instance, station),
+            json='/json/instances/%s/stations/%s/status' % (instance, station),
+        )
         return self._render(request, format, template='station_status',
                 data=data, instance=instance, station=station)
 
@@ -121,6 +144,7 @@ def get_dispatcher(cfg, dlstatuses):
     d = Dispatcher()
     def connect(name, url):
         d.connect(name, url, c, action=name)
+    connect('root',            '/')
     connect('index',           '/{format}')
     connect('instances',       '/{format}/instances')
     connect('instance_status', '/{format}/instances/{instance}/status')

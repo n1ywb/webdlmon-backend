@@ -6,10 +6,16 @@ import json
 <h2>${instance} ${station} Status</h2>
 
 <p>
-    <a href="/json/instances/${instance}/stations/${station}/status">json</a>
+Other Formats:
+<ul>
+    % for k,v in data['formats'].items():
+        <li><a href="${v}">${k}</a></li>
+    % endfor
+</ul>
 </p>
 
+Station Status:
 <pre>
-${json.dumps(data, indent=4, sort_keys=True)}
+${json.dumps(data['station_status'], indent=4, sort_keys=True)}
 </pre>
 

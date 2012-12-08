@@ -1,6 +1,17 @@
 <%inherit file="template.html"/>
 
-<h2>Resources</h2>
+<h2>Index</h2>
+
+<p>
+Other Formats:
+<ul>
+    % for k,v in data['formats'].items():
+        <li><a href="${v}">${k}</a></li>
+    % endfor
+</ul>
+</p>
+
+Resources:
 
 <ul>
     <li>

@@ -3,7 +3,18 @@
 import json
 %>
 <h2>${instance} Status</h2>
+
+<p>
+Other Formats:
+<ul>
+    % for k,v in data['formats'].items():
+        <li><a href="${v}">${k}</a></li>
+    % endfor
+</ul>
+</p>
+
+Status:
 <pre>
-${json.dumps(data, indent=4, sort_keys=True)}
+${json.dumps(data['instance_status'], indent=4, sort_keys=True)}
 </pre>
 

@@ -2,10 +2,15 @@
 
 import json
 
+from twisted.python import log
 from twisted.web.resource import Resource
 from txroutes import Dispatcher
 from mako.template import Template
 from mako.lookup import TemplateLookup
+from mako import exceptions
+
+
+FORMATS = ('html', 'json')
 
 
 class Controller(object):
@@ -19,14 +24,17 @@ class Controller(object):
             request.setHeader("response-code", code)
             return str(self.templates.get_template('error.html').render(cfg=self.cfg, code=code, msg=msg))
 
+    def _jsondumps(self, data):
+        return json.dumps(data, indent=4, sort_keys=True)
+
     def _render(self, request, format, template, data, **kwargs):
         request.setHeader("response-code", 200)
         if format == 'json':
 	    request.setHeader("content-type", "application/json")
 	    if request.args.has_key('callback'):
 		    request.setHeader("content-type", "application/javascript")
-		    return request.args['callback'][0] + '(' + json.dumps(data) + ')'
-            return json.dumps(data)
+		    return request.args['callback'][0] + '(' + self._jsondumps(data) + ')'
+            return self._jsondumps(data)
 
         elif format == 'html':
             request.setHeader("content-type", "text/html")
@@ -41,12 +49,39 @@ class Controller(object):
         else:
             return self._error(request, 400, "Unknown format %r" % format)
 
-    def index(self, request):
-        return self._render(request, 'html', template='index', data=None)
+    def index(self, request, format):
+        data = dict(
+                   resources=dict(
+                       instances=dict(
+                           html='/html/instances',
+                           json='/json/instances'
+                           )
+                       )
+                   )
+        return self._render(request, format, template='index', data=data)
 
     def instances(self, request, format):
-        return self._render(request, format, template='instances',
-                data=self.dlstatuses.keys())
+        stations = self.dlstatuses.keys()
+        data = dict(
+                formats=dict(
+                    html='/html/instances',
+                    json='/json/instances',
+                ),
+                instances=[
+                        dict(
+                            name=stn,
+                            status=dict(
+                                ((fmt, '/'.join(('',fmt,'instances',stn,'status')))
+                                    for fmt in FORMATS)),
+                            stations=dict(
+                                ((fmt,
+                                    '/'.join(('',fmt,'instances',stn,'stations')))
+                                    for fmt in FORMATS)),
+                        )
+                        for stn in stations
+                ]
+        )
+        return self._render(request, format, template='instances', data=data)
 
     def instance_status(self, request, format, instance):
         try:
@@ -86,9 +121,10 @@ def get_dispatcher(cfg, dlstatuses):
     d = Dispatcher()
     def connect(name, url):
         d.connect(name, url, c, action=name)
-    connect('index',           '/')
+    connect('index',           '/{format}')
     connect('instances',       '/{format}/instances')
     connect('instance_status', '/{format}/instances/{instance}/status')
     connect('stations',        '/{format}/instances/{instance}/stations')
     connect('station_status',  '/{format}/instances/{instance}/stations/{station}/status')
     return d
+

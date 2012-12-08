@@ -2,28 +2,36 @@
 <h2>Named DLMon Instances</h2>
 
 <p>
-    <a href="/json/instances">json</a>
+Other Formats:
+<ul>
+    % for k,v in data['formats'].items():
+        <li><a href="${v}">${k}</a></li>
+    % endfor
+</ul>
 </p>
 
 
+Instances:
 <ul>
-% for instance in data:
+% for instance in data['instances']:
 <li>
-    ${instance}
+    ${instance['name']}
     <ul>
         <li>
             Full status
             <ul>
-                <li><a href="/html/instances/${instance}/status">html</a></li>
-                <li><a href="/json/instances/${instance}/status">json</a></li>
+                % for fmt in instance['status']:
+                <li><a href="/${fmt}/instances/${instance['name']}/status">${fmt}</a></li>
+                % endfor
             </ul>
         </li>
 
         <li>
             Station list
             <ul>
-                <li><a href="/html/instances/${instance}/stations">html</a></li>
-                <li><a href="/json/instances/${instance}/stations">json</a></li>
+                % for fmt in instance['status']:
+                <li><a href="/${fmt}/instances/${instance['name']}/stations">${fmt}</a></li>
+                % endfor
             </ul>
         </li>
 

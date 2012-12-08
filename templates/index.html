@@ -6,7 +6,10 @@
     <li>
         DLMon Instances
         <ul>
-            <li><a href="/html/instances">html</a></li>
-            <li><a href="/json/instances">json</a></li>
-
+            % for k,v in data['resources']['instances'].items():
+            <li><a href="${v}">${k}</a></li>
+            % endfor
+        </ul>
+    </li>
+</ul>
 

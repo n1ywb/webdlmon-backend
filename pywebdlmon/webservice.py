@@ -13,7 +13,6 @@ from pprint import pprint, pformat
 #from subprocess import Popen,PIPE
 import os
 import os.path
-import logging
 
 from twisted.python import log
 from twisted.internet import reactor
@@ -30,69 +29,12 @@ import config
 
 from resources.webbase import get_dispatcher
 
-# Twisted websockets
-from twisted.application import internet
-from twisted.application.service import Application, Service
 
-from txws import WebSocketFactory
-
-
-
-# Websockets
-STATIC_ROOT='html'
-WEBSOCKETS_PORT=6998
-
-import json
-import time
-
-from twisted.internet.protocol import Factory, Protocol
-
+from resources.ws import Stream, StreamFactory
 
 class UnknownInstance(Exception): pass
 
-class Stream(Protocol):
-    def __init__(self, start_stream_cb):
-        self.start_stream_cb = start_stream_cb
-
-    def connectionMade(self):
-        log.msg("Connected on websockets port, loc: %r" %
-                self.transport.location)
-        # monkey patch txws to notify us after it parses the location field
-        oldValidateHeaders = self.transport.validateHeaders
-        def wrap(*args, **kwargs):
-            r = oldValidateHeaders(*args, **kwargs)
-            if r: self.headersValidated()
-            return r
-        self.transport.validateHeaders = wrap
-
-    def headersValidated(self):
-        log.msg("Websocket headers validated, loc: %r" %
-                self.transport.location)
-        # start streaming?
-        try:
-            path = self.transport.location.split('/')
-            bl1, ws, name = path
-        except Exception:
-            self.transport.write(json.dumps({'error': 400,
-                'path': self.transport.location}))
-            self.transport.loseConnection()
-            return
-        try:
-            self.start_stream_cb(self, name)
-        except UnknownInstance, e:
-            self.transport.write(json.dumps({'error': 404,
-                'path': self.transport.location}))
-            self.transport.loseConnection()
-        except Exception, e:
-            self.transport.write(json.dumps({'error': 500}))
-            self.transport.loseConnection()
-
-
-class StreamFactory(Factory):
-    def __init__(self, start_stream_cb):
-        self.start_stream_cb = start_stream_cb
-    def buildProtocol(self, addr):
-        return Stream(self.start_stream_cb)
+from txws import WebSocketFactory
 
 
 # StreamProxy
@@ -142,7 +84,8 @@ class App(object):
         factory = BufferingProxyFactory()
         factory.buffer_factory = PacketBuffer
 
-        websocketfactory = WebSocketFactory(StreamFactory(start_stream_cb))
+        websocketfactory = WebSocketFactory(StreamFactory(start_stream_cb,
+            dispatcher))
 
         # route /ws to websockets, everything else including / to http
         ExampleDispatcher.prefix1 = "/ws"

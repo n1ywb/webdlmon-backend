@@ -23,6 +23,7 @@ class Controller(object):
         self.dlstatuses = dlstatuses
 
     def _error(self, request, code, msg):
+        # TODO return JSON error object for json queries
             request.setHeader("content-type", "text/html")
             request.setHeader("response-code", code)
             return str(self.templates.get_template('error.html').render(cfg=self.cfg, code=code, msg=msg))
@@ -86,7 +87,7 @@ class Controller(object):
                             name=stn,
                             status=dict(
                                 ((fmt, '/'.join(('',fmt,'instances',stn,'status')))
-                                    for fmt in FORMATS)),
+                                    for fmt in FORMATS+('ws',))),
                             stations=dict(
                                 ((fmt,
                                     '/'.join(('',fmt,'instances',stn,'stations')))
@@ -107,6 +108,7 @@ class Controller(object):
             # add instance name to urls
             html='/html/instances/%s/status' % instance,
             json='/json/instances/%s/status' % instance,
+            ws='/ws/instances/%s/status' % instance,
         )
         data['instance_status']['dataloggers'] = data['instance_status']['dataloggers'].values()
         return self._render(request, format, template='instance_status',

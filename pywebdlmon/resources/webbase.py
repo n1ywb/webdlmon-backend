@@ -12,7 +12,6 @@ from mako.lookup import TemplateLookup
 from mako import exceptions
 
 
-
 FORMATS = ('html', 'json')
 
 

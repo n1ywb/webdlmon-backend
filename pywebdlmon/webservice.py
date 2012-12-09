@@ -65,16 +65,6 @@ class App(object):
         website = Site( dispatcher )
         log.msg('\t\t\t\t\t=> OK')
 
-        # TODO deferrable?
-        def start_stream_cb(stream, name):
-            try:
-                dlstatuses[name].add_stream(stream)
-            except KeyError:
-                log.err("404 not found: %r " % name)
-                raise UnknownInstance(name)
-            else:
-                log.msg("streaming %r" % name)
-
         # websockets
         # Somehow the websocket server needs to be commanded to send updated
         # state data.
@@ -84,8 +74,8 @@ class App(object):
         factory = BufferingProxyFactory()
         factory.buffer_factory = PacketBuffer
 
-        websocketfactory = WebSocketFactory(StreamFactory(start_stream_cb,
-            dispatcher))
+        websocketfactory = WebSocketFactory(StreamFactory(dispatcher,
+            dlstatuses))
 
         # route /ws to websockets, everything else including / to http
         ExampleDispatcher.prefix1 = "/ws"

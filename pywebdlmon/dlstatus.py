@@ -10,6 +10,8 @@ import time
 from twisted.python import log
 from twisted.internet.threads import deferToThread
 
+from twisted.internet.defer import Deferred
+
 from kudu.exc import OrbIncomplete
 from kudu.orb import Orb
 from kudu.pkt import Pkt
@@ -98,47 +100,29 @@ class UnknownStation(Exception): pass
 class DLStatus(object):
     """Represents a particular named DLMON instance."""
     def __init__(self):
-        self.streams = set()
-        self.seen_stns = set()
         self.status = {
             'metadata': {
                 'timestamp': None
             },
             'dataloggers': {}
         }
-
-    @staticmethod
-    def new_stn_cb(dlmon, id):
-        """This method is called whenever a new station is heard.
-
-        Monkey patch this with your own callback."""
-        pass
+        self.updated_stations = Deferred()
 
     def update_status(self, pfdict):
         """Updates status from pfdict"""
+        updated_stations = set()
         timestamp = str(int(time.mktime(datetime.utcnow().timetuple())))
         pfdict = self.pfmorph(pfdict)
         for stn,status in pfdict['dls'].items():
-            if not stn in self.seen_stns:
-                self.seen_stns.add(stn)
-                self.new_stn_cb(self, stn)
+            updated_stations.add(stn)
             net, sep, stnonly = stn.partition('_')
             self.status['dataloggers'][stn] = {
                     'name': stn,
                     'values': status }
-            self.stream_data(stn, status, timestamp)
         self.status['metadata']['timestamp'] = timestamp
-
-    def stream_data(self, stn, status, timestamp):
-        # write status to each stream; catch excs and remove offending
-        # stream; what about errbacks here?
-        # move this method somewhere else and use deferrables
-        for stream in set(self.streams):
-            try:
-                stream.transport.write(json.dumps(dict(name=stn,values=status,timestamp=timestamp)))
-            except Exception, e:
-                self.streams.discard(stream)
-                log.err("Error writing to stream")
+        old_updated_stations = self.updated_stations
+        self.updated_stations = Deferred()
+        old_updated_stations.callback(updated_stations)
 
     def to_jsonable(self):
         """Return state of all stations in json format."""
@@ -175,5 +159,3 @@ class DLStatus(object):
         pfdict['dls'] = dls
         return pfdict
 
-    def add_stream(self, stream):
-        self.streams.add(stream)

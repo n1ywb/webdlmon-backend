@@ -1,13 +1,16 @@
 #!/usr/bin/env python
 
+import os.path
 import json
 
 from twisted.python import log
 from twisted.web.resource import Resource
+from twisted.web.static import File as StaticFile
 from txroutes import Dispatcher
 from mako.template import Template
 from mako.lookup import TemplateLookup
 from mako import exceptions
+
 
 
 FORMATS = ('html', 'json')
@@ -51,6 +54,10 @@ class Controller(object):
 
     def root(self, request):
         return self.index(request, 'html')
+
+    def static(self, request, file):
+        # TODO santize file
+        return StaticFile(os.path.join('static', file)).render(request)
 
     def index(self, request, format):
         data = dict(
@@ -145,6 +152,7 @@ def get_dispatcher(cfg, dlstatuses):
     def connect(name, url):
         d.connect(name, url, c, action=name)
     connect('root',            '/')
+    connect('static',          '/static/{file}')
     connect('index',           '/{format}')
     connect('instances',       '/{format}/instances')
     connect('instance_status', '/{format}/instances/{instance}/status')

@@ -40,8 +40,13 @@ class FakeRequest(object):
 
 class Stream(Protocol):
     def __init__(self, dispatcher, controller):
+        log.msg("New Stream")
         self.dispatcher = dispatcher
         self.controller = controller
+        self.connected = False
+
+    def connectionLost(self, reason):
+        self.connected = False
 
     def connectionMade(self):
         log.msg("Connected on websockets port, loc: %r" %
@@ -58,6 +63,7 @@ class Stream(Protocol):
     def headersValidated(self):
         log.msg("Websocket headers validated, loc: %r" %
                 self.transport.location)
+        self.connected = True
         result = self.dispatcher._mapper.match(self.transport.location)
         log.msg(result)
         handler = None
@@ -80,18 +86,24 @@ class Stream(Protocol):
             #self.transport.loseConnection()
 
     def instance_status_cb(self, updated_stations):
-        self.dlstatus.updated_stations.addCallback(self.instance_status_cb)
-        if updated_stations is not None:
-            for stn in updated_stations:
-                r = self.webcontroller.station_status(FakeRequest, 'json',
-                        self.instance, stn)
-                self.transport.write(r)
+        if self.connected:
+            self.dlstatus.updated_stations.addCallback(self.instance_status_cb)
+            if updated_stations is not None:
+                for stn in updated_stations:
+                    r = self.webcontroller.station_status(FakeRequest, 'json',
+                            self.instance, stn)
+                    log.msg(repr((stn, r)))
+                    self.transport.write(r)
+            return updated_stations
 
     def station_status_cb(self, updated_stations):
-        self.dlstatus.updated_stations.addCallback(self.station_status_cb)
-        if updated_stations is not None and self.station in updated_stations:
-            r = self.webcontroller.station_status(FakeRequest, 'json', self.instance, self.station)
-            self.transport.write(r)
+        if self.connected:
+            self.dlstatus.updated_stations.addCallback(self.station_status_cb)
+            if updated_stations is not None and self.station in updated_stations:
+                r = self.webcontroller.station_status(FakeRequest, 'json', self.instance, self.station)
+                log.msg(repr((self.station, r)))
+                self.transport.write(r)
+            return updated_stations
 
 
 class StreamFactory(Factory):

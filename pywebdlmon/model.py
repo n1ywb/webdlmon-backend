@@ -1,90 +1,72 @@
 #!/usr/bin/env python
 
-"""Data objects.
-
-Each data object has at minimum the attributes listed in the DataObject parent
-class.
-
-Data objects implement the observer pattern; IE they listen to each other for
-update events to know when to update their own data.
-
-Data objects pre-generate their data in serialized format in response to each
-update. Thus data access clients must simply read the appropriate serialized
-datum at the appropriate data object.
-
-Furthermore, asynchronous clients may listen to the update event to know when
-new data is available.
-"""
-
-
 import json
-from twisted.python import log
-from twisted.internet.defer import Deferred
 
+from twisted.python import log
+
+from mako.exceptions import text_error_template
+
+from kudu.exc import OrbIncomplete
+from kudu.twisted.util import ObservableDict
+
+from orb import StatusPktSource
+
+FORMATS = ('html', 'json')
+
+REAP_TIMEOUT = 2.0
+
+
+class UnknownInstance(Exception): pass
 
 class UnknownStation(Exception): pass
 
 
 class DataObject(object):
-    def __init__(self, on_update):
-        self.parent_on_update = on_update
-        self.deferred = Deferred()
-        self.reset()
+    def __init__(self, cfg):
+        self.template = cfg.templates.get_template(self.template_name)
+        self.data = ObservableDict(html=None, json=None)
 
-    def reset(self):
-        d = self.parent_on_update()
-        d.addCallback(self.update)
-
+    # this super should make templates and json
+    # subclasses should connect incoming updates to html/json maker
     def update(self, data):
-        self.html = '' # render template
-        self.json = '' # serialize to json
-        old_deferred = self.deferred
-        self.deferred = Deferred()
-        old_deferred.callback(data)
-        self.reset()
-
-    def on_update(self):
-        d = Deferred()
-        self.deferred.chainDeferred(d)
-        return d
-
-
-class StatusUpdate(DataObject):
-    pass
-
-
-class StationStatus(DataObject):
-    pass
+        self.data['html'] = self.template.render(data=data)
+        self.data['json'] = json.dumps(data)
 
 
 class StationList(DataObject):
-    def update(self, parent_data):
-        stations=parent_data['InstanceStatus']['stations']
+    template_name = 'stations.html'
+
+    def __init__(self, *args, **kwargs):
+        self.stations=set()
+        super(StationList, self).__init__(*args, **kwargs)
+
+    def update(self, updated_stations):
+        self.stations |= updated_stations['dataloggers'].iterkeys()
         data = {'stations': stations.keys()}
         data = {str(self.__class__): data}
-        super(Instance, self).update(data)
+        super(StationList, self).update(data)
         return data
 
 
 class InstanceStatus(DataObject):
+    template_name = 'instance_status.html'
+
     def __init__(self, *args, **kwargs):
         self.stations = dict()
         super(InstanceStatus, self).__init__(*args, **kwargs)
 
-    def update(self, parent_data):
-        # This doesn't really follow the observer pattern, but seemed like the
-        # most efficient way.
+    def update(self, updated_stations):
         status = dict()
-        updated_stations = parent_data['Aggregator']['updated_stations']
+        updated_stations = updated_stations['dataloggers']
         for station_name, station_status in updated_stations:
             try:
                 station = self.stations[station_name]
             except KeyError:
-                station = selt.stations[station_name] = Station()
+                station = self.stations[station_name] = Station()
             status.update(station.update(station_status))
         data = dict(status=status)
-        data = {str(__class__): data}
-        super(Instance, self).update(data)
+        data = {str(self.__class__): data}
+        super(InstanceStatus, self).update(data)
         return data
 
     def get_station(self, name):
@@ -95,24 +77,60 @@ class InstanceStatus(DataObject):
 
 
 class Instance(DataObject):
-    def __init__(self, name):
+    # TODO FIXME
+    template_name = 'index.html'
+
+    def __init__(self, name, sources, cfg, *args, **kwargs):
         self.name = name
-        self.stations = {}
+        #self.status_update = StatusUpdate()
+        self.instance_status = InstanceStatus(cfg)
+        self.station_list = StationList(cfg)
+        for source in sources:
+            def on_connect(r):
+                self.reap(source)
+            d = source.connect()
+            d.addCallback(on_connect)
+        super(Instance, self).__init__(cfg, *args, **kwargs)
 
-        # make orbs
-        # make aggregator
-        # wire orbs to aggregator
+    def reap(self, source):
+        d = source.reap_timeout(REAP_TIMEOUT)
+        d.addCallbacks(self.on_reap, errback=self.on_reap_error,
+                callbackKeywords=dict(source=source),
+                errbackKeywords=dict(source=source), )
+        return d
 
-        self.status_update = StatusUpdate(self.on_update)
-        self.instance_status = InstanceStatus(self.on_update)
-        self.station_list = StationList(self.instance_status.on_update)
+    def on_reap_error(self, failure, source):
+        failure.trap(OrbIncomplete)
+        return self.reap(source)
+
+    def on_reap(self, pfdict, source):
+        r = self.update(pfdict)
+        self.reap(source)
+        return r
 
     def update(self, updated_stations):
+        self.instance_status.update(updated_stations)
+        self.station_set.update(updated_stations)
         data = dict()
-        data.update(self.instance_status.update(updated_stations))
-        data.update(self.station_set.update(updated_stations))
         data['name'] = self.name
-        data = {str(__class__): data}
+        data = {str(self.__class__): data}
         super(Instance, self).update(data)
-        return data
+
+
+class InstanceCollection(object):
+    """A collection of dlmon instances."""
+    def __init__(self, cfg):
+        instances = self.instances = {}
+        for name, srcs in cfg.instances.iteritems():
+            sources = [StatusPktSource(srcname, srccfg.match, srccfg.reject)
+                        for srcname,srccfg in srcs.iteritems()]
+            instance = Instance(name, sources, cfg)
+            instances[name] = instance
+            log.msg("New dlmon instance: %s" % name)
+
+    def get_instance(self, name):
+        try:
+            return self.instances[name]
+        except KeyError, e:
+            raise UnknownInstance(name)
 

@@ -9,26 +9,23 @@ from twisted.internet.protocol import Factory, Protocol
 class Controller(object):
     """Routes controller"""
 
-    def __init__(self, dlstatuses):
+    def __init__(self, instances):
         self.streams = set()
-        self.dlstatuses = dlstatuses
+        self.instances = instances
 
-    def instance_status(self, protocol, format, instance):
+    def instance_status(self, protocol, format, instance_name):
         # get instance
-        dlstatus = self.dlstatuses[instance]
-        protocol.dlstatus = dlstatus
+        instance = self.instances[instance_name]
         protocol.instance = instance
-        dlstatus.updated_stations.addCallback(protocol.instance_status_cb)
+        protocol.instance_name = instance_name
+        instance.updated_stations.addCallback(protocol.instance_status_cb)
 
-    def station_status(self, protocol, format, instance, station):
-        dlstatus = self.dlstatuses[instance]
-        protocol.dlstatus = dlstatus
+    def station_status(self, protocol, format, instance_name, station):
+        instance = self.instances[instance_name]
         protocol.instance = instance
+        protocol.instance_name = instance_name
         protocol.station = station
-        dlstatus.updated_stations.addCallback(protocol.station_status_cb)
-
-
-class UnknownInstance(Exception): pass
+        instance.updated_stations.addCallback(protocol.station_status_cb)
 
 
 class FakeRequest(object):
@@ -80,24 +77,24 @@ class Stream(Protocol):
             #self.transport.loseConnection()
 
     def instance_status_cb(self, updated_stations):
-        self.dlstatus.updated_stations.addCallback(self.instance_status_cb)
+        self.instance.updated_stations.addCallback(self.instance_status_cb)
         if updated_stations is not None:
             for stn in updated_stations:
                 r = self.webcontroller.station_status(FakeRequest, 'json',
-                        self.instance, stn)
+                        self.instance_name, stn)
                 self.transport.write(r)
 
     def station_status_cb(self, updated_stations):
-        self.dlstatus.updated_stations.addCallback(self.station_status_cb)
+        self.instance.updated_stations.addCallback(self.station_status_cb)
         if updated_stations is not None and self.station in updated_stations:
-            r = self.webcontroller.station_status(FakeRequest, 'json', self.instance, self.station)
+            r = self.webcontroller.station_status(FakeRequest, 'json', self.instance_name, self.station)
             self.transport.write(r)
 
 
 class StreamFactory(Factory):
-    def __init__(self, dispatcher, dlstatuses):
+    def __init__(self, dispatcher, instances):
         self.dispatcher = dispatcher
-        self.controller = Controller(dlstatuses)
+        self.controller = Controller(instances)
     def buildProtocol(self, addr):
         return Stream(self.dispatcher, self.controller)
 

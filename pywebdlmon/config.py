@@ -7,12 +7,9 @@ into useful objects which the application can use.
 """
 
 import sys
-#import datetime
-from pprint import pprint
-#from subprocess import Popen,PIPE
 import os
-import os.path
-import logging
+
+from mako.lookup import TemplateLookup
 
 sys.path.append(os.environ['ANTELOPE'] + '/data/python')
 
@@ -81,6 +78,9 @@ class Config(object):
                 source = SourceConfig(self, srccfg)
                 sources[srcname] = source
             self.instances[instname] = sources
+        self.templates = TemplateLookup(directories=['templates'])
+
+
 
     def set_val(self, k, pf, options=None):
         """Sets the attribute 'k'.

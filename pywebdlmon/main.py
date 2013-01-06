@@ -4,43 +4,27 @@
 This is the twisted.web application.
 """
 
-import functools
-import traceback
-from optparse import OptionParser
+# Std lib
 import sys
-#import datetime
-from pprint import pprint, pformat
-#from subprocess import Popen,PIPE
-import os
-import os.path
 
+# Twisted
 from twisted.python import log
 from twisted.internet import reactor
-from twisted.web.resource import Resource
 from twisted.web.server import Site
-from twisted.web import static
 
-sys.path.append(os.environ['ANTELOPE'] + '/data/python')
-
-from antelope import _stock
-
-from dlstatus import DLStatus, DLSource, DEFAULT_MATCH
-import config
-
-from resources.webbase import get_dispatcher
-
-
-from resources.ws import Stream, StreamFactory
-
-class UnknownInstance(Exception): pass
-
+# Web sockets
 from txws import WebSocketFactory
-
 
 # StreamProxy
 from streamprox.proxy import BufferingProxyFactory
 from streamprox.packet_buffer import PacketBuffer
 from streamprox.dispatcher import ExampleDispatcher
+
+# This project
+import config
+from transport.webbase import get_dispatcher
+from transport.ws import StreamFactory
+from model import InstanceCollection
 
 
 class App(object):
@@ -49,19 +33,11 @@ class App(object):
         """Run the app. Options as parsed by optparse."""
         log.startLogging(sys.stdout)
         cfg = config.Config(options)
-        dlstatuses = {}
-        for dlstatus_name, srcs in cfg.instances.iteritems():
-            dlstatus = DLStatus()
-            dlstatuses[dlstatus_name] = dlstatus
-            for srcname,srccfg in srcs.iteritems():
-                source = DLSource(srcname, srccfg.match, srccfg.reject)
-                # TODO use deferreds instead?
-                source.add_sink(dlstatus.update_status)
-            log.msg("New dlstatus: %s" % dlstatus_name)
+        instances = InstanceCollection(cfg)
 
         # website
         log.msg('Build as site object:')
-        dispatcher = get_dispatcher(cfg, dlstatuses)
+        dispatcher = get_dispatcher(cfg, instances)
         website = Site( dispatcher )
         log.msg('\t\t\t\t\t=> OK')
 
@@ -75,7 +51,7 @@ class App(object):
         factory.buffer_factory = PacketBuffer
 
         websocketfactory = WebSocketFactory(StreamFactory(dispatcher,
-            dlstatuses))
+            instances))
 
         # route /ws to websockets, everything else including / to http
         ExampleDispatcher.prefix1 = "/ws"

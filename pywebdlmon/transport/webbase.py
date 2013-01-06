@@ -12,25 +12,20 @@ from mako.lookup import TemplateLookup
 from mako import exceptions
 
 
-FORMATS = ('html', 'json')
-
-
 class Controller(object):
-    def __init__(self, cfg, dlstatuses):
-        self.templates = TemplateLookup(directories=['templates'])
+    def __init__(self, cfg, instances):
         self.cfg = cfg
-        self.dlstatuses = dlstatuses
+        self.instances = instances
 
     def _error(self, request, code, msg):
         # TODO return JSON error object for json queries
-            request.setHeader("content-type", "text/html")
-            request.setHeader("response-code", code)
-            return str(self.templates.get_template('error.html').render(cfg=self.cfg, code=code, msg=msg))
-
-    def _jsondumps(self, data):
-        return json.dumps(data, indent=4, sort_keys=True)
+        # TODO Fix template lookup
+        request.setHeader("content-type", "text/html")
+        request.setHeader("response-code", code)
+        return str(self.templates.get_template('error.html').render(cfg=self.cfg, code=code, msg=msg))
 
     def _render(self, request, format, template, data, **kwargs):
+        # TODO Need to keep this header-setting functionality
         request.setHeader("response-code", 200)
         if format == 'json':
 	    request.setHeader("content-type", "application/json")
@@ -75,50 +70,42 @@ class Controller(object):
         return self._render(request, format, template='index', data=data)
 
     def instances(self, request, format):
-        stations = self.dlstatuses.keys()
+        stations = self.instances.keys()
         data = dict(
                 formats=dict(
                     html='/html/instances',
                     json='/json/instances',
                 ),
-                instances=[
-                        dict(
-                            name=stn,
-                            status=dict(
-                                ((fmt, '/'.join(('',fmt,'instances',stn,'status')))
-                                    for fmt in FORMATS+('ws',))),
-                            stations=dict(
-                                ((fmt,
-                                    '/'.join(('',fmt,'instances',stn,'stations')))
-                                    for fmt in FORMATS)),
-                        )
-                        for stn in stations
-                ]
+                # this one is sort of special
         )
         return self._render(request, format, template='instances', data=data)
 
     def instance_status(self, request, format, instance):
+        # TODO Move exception handling to a common location for all handlers
+        # TODO If this controller is to be unified with the WS controller, we
+        # need a way to differentiate between sync and async requests.
         try:
-            dlstatus = self.dlstatuses[instance]
-        except KeyError:
+            instance = self.instances.get_instance(instance)
+        except UnknownInstance:
             return self._error(request, 404, "Unknown DLMon Instance: %r" % instance)
-        data = dict(instance_status=dict(dlstatus.status))
-        data['formats'] = dict(
-            # add instance name to urls
-            html='/html/instances/%s/status' % instance,
-            json='/json/instances/%s/status' % instance,
-            ws='/ws/instances/%s/status' % instance,
-        )
-        data['instance_status']['dataloggers'] = data['instance_status']['dataloggers'].values()
-        return self._render(request, format, template='instance_status',
-                data=data, instance=instance)
+
+        try:
+            status = instance.instance_status.deferred_getitem('json', immediate=True)
+        except KeyError:
+            # Seriously, consolidate this crap somewhere else
+            return self._error(request, 404, "Unknown Format: %r" % instance)
+
+        def cb(self, r):
+            request.write(r)
+            request.finish()
+
+        return server.NOT_DONE_YET
 
     def stations(self, request, format, instance):
         try:
-            dlstatus = self.dlstatuses[instance]
+            instance = self.instances[instance]
         except KeyError:
             return self._error(request, 404, "Unknown DLMon Instance: %r" % instance)
-        data=dict(stations=dlstatus.status['dataloggers'].keys())
         data['formats'] = dict(
             # add instance name to urls
             html='/html/instances/%s/stations' % instance,
@@ -129,35 +116,24 @@ class Controller(object):
 
     def station_status(self, request, format, instance, station):
         try:
-            dlstatus = self.dlstatuses[instance]
+            instance = self.instances[instance]
         except KeyError:
             return self._error(request, 404, "Unknown DLMon Instance: %r" % instance)
-        dataloggers = dlstatus.status['dataloggers']
-        try:
-            data = dict(station_status=dataloggers[station.decode('utf8')])
-        except KeyError:
-            return self._error(request, 404, "Unknown Station: %r" % station)
-        # add formats
-        data['formats'] = dict(
-            # add instance name to urls
-            html='/html/instances/%s/stations/%s/status' % (instance, station),
-            json='/json/instances/%s/stations/%s/status' % (instance, station),
-        )
         return self._render(request, format, template='station_status',
                 data=data, instance=instance, station=station)
 
 
-def get_dispatcher(cfg, dlstatuses):
-    c = Controller(cfg, dlstatuses)
+def get_dispatcher(cfg, instances):
+    c = Controller(cfg, instances)
     d = Dispatcher()
     def connect(name, url):
         d.connect(name, url, c, action=name)
-    connect('root',            '/')
-    connect('static',          '/static/{file}')
-    connect('index',           '/{format}')
-    connect('instances',       '/{format}/instances')
+#    connect('root',            '/')
+#    connect('static',          '/static/{file}')
+#    connect('index',           '/{format}')
+#    connect('instances',       '/{format}/instances')
     connect('instance_status', '/{format}/instances/{instance}/status')
     connect('stations',        '/{format}/instances/{instance}/stations')
-    connect('station_status',  '/{format}/instances/{instance}/stations/{station}/status')
+#    connect('station_status',  '/{format}/instances/{instance}/stations/{station}/status')
     return d
 

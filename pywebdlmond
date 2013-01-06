@@ -4,7 +4,7 @@
 import sys
 from optparse import OptionParser
 
-from pywebdlmon.webservice import App
+from pywebdlmon.main import App
 
 
 def main(args=None):

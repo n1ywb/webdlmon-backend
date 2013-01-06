@@ -30,7 +30,7 @@ Instances:
         <li>
             Station list
             <ul>
-                % for fmt in instance['status']:
+                % for fmt in instance['stations']:
                 <li><a href="/${fmt}/instances/${instance['name']}/stations">${fmt}</a></li>
                 % endfor
             </ul>

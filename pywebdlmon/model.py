@@ -8,6 +8,7 @@ from mako.exceptions import text_error_template
 
 from kudu.exc import OrbIncomplete
 from kudu.twisted.util import ObservableDict
+import kudu.orb
 
 from orb import StatusPktSource
 
@@ -29,6 +30,7 @@ class DataObject(object):
     # this super should make templates and json
     # subclasses should connect incoming updates to html/json maker
     def update(self, data):
+        return
         self.data['html'] = self.template.render(data=data)
         self.data['json'] = json.dumps(data)
 
@@ -47,6 +49,8 @@ class StationList(DataObject):
         super(StationList, self).update(data)
         return data
 
+class Station(dict):
+    pass
 
 class InstanceStatus(DataObject):
     template_name = 'instance_status.html'
@@ -56,9 +60,10 @@ class InstanceStatus(DataObject):
         super(InstanceStatus, self).__init__(*args, **kwargs)
 
     def update(self, updated_stations):
+        return
         status = dict()
         updated_stations = updated_stations['dataloggers']
-        for station_name, station_status in updated_stations:
+        for station_name, station_status in updated_stations.iteritems():
             try:
                 station = self.stations[station_name]
             except KeyError:
@@ -86,10 +91,14 @@ class Instance(DataObject):
         self.instance_status = InstanceStatus(cfg)
         self.station_list = StationList(cfg)
         for source in sources:
-            def on_connect(r):
-                self.reap(source)
-            d = source.connect()
-            d.addCallback(on_connect)
+# TODO Fix async connect packet corruption issue
+#            def on_connect(r):
+#                self.reap(source)
+#            d = source.connect()
+#            d.addCallback(on_connect)
+            log.msg("connecting to src %r" % source)
+            kudu.orb.Orb.connect(source)
+            self.reap(source)
         super(Instance, self).__init__(cfg, *args, **kwargs)
 
     def reap(self, source):
@@ -109,6 +118,7 @@ class Instance(DataObject):
         return r
 
     def update(self, updated_stations):
+        return
         self.instance_status.update(updated_stations)
         self.station_set.update(updated_stations)
         data = dict()
@@ -122,7 +132,8 @@ class InstanceCollection(object):
     def __init__(self, cfg):
         instances = self.instances = {}
         for name, srcs in cfg.instances.iteritems():
-            sources = [StatusPktSource(srcname, srccfg.match, srccfg.reject)
+            sources = [StatusPktSource(srcname, 'r', select=srccfg.match,
+                                                     reject=srccfg.reject)
                         for srcname,srccfg in srcs.iteritems()]
             instance = Instance(name, sources, cfg)
             instances[name] = instance

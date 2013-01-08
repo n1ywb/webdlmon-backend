@@ -22,6 +22,8 @@ class UnknownInstance(Exception): pass
 
 class UnknownStation(Exception): pass
 
+class UnknownFormat(Exception): pass
+
 
 class DataObject(object):
     def __init__(self, cfg):
@@ -38,6 +40,12 @@ class DataObject(object):
             print text_error_template().render()
             raise
         self.data['json'] = json.dumps(data, indent=4, sort_keys=True)
+
+    def get_format(self, format, immediate):
+        if self.data.has_key(format):
+            return self.data.deferred_getitem(format, immediate)
+        else:
+            raise UnknownFormat(format)
 
 
 class StationList(DataObject):

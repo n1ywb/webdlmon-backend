@@ -14,6 +14,7 @@ from mako.template import Template
 from mako.lookup import TemplateLookup
 from mako import exceptions
 
+from pywebdlmon.model import UnknownInstance, UnknownStation
 
 class Controller(object):
     def __init__(self, cfg, instances):
@@ -25,7 +26,7 @@ class Controller(object):
         # TODO Fix template lookup
         request.setHeader("content-type", "text/html")
         request.setHeader("response-code", code)
-        return str(self.templates.get_template('error.html').render(cfg=self.cfg, code=code, msg=msg))
+        return str(self.cfg.templates.get_template('error.html').render(cfg=self.cfg, code=code, msg=msg))
 
     def _render(self, request, format, template, data, **kwargs):
         # TODO Need to keep this header-setting functionality
@@ -83,7 +84,7 @@ class Controller(object):
         )
         return self._render(request, format, template='instances', data=data)
 
-    def instance_status(self, request, format, instance, transport):
+    def instance_status(self, request, transport, instance, format):
         # TODO Move exception handling to a common location for all handlers
         # TODO If this controller is to be unified with the WS controller, we
         # need a way to differentiate between sync and async requests.
@@ -91,42 +92,55 @@ class Controller(object):
             instance = self.instances.get_instance(instance)
         except UnknownInstance:
             return self._error(request, 404, "Unknown DLMon Instance: %r" % instance)
-
         try:
             status = instance.instance_status.data.deferred_getitem(format, immediate=True)
         except KeyError:
-            # Seriously, consolidate this crap somewhere else
-            return self._error(request, 404, "Unknown Format: %r" % instance)
-
+            # Seriously, consolidate this crap somewhere else; decorator maybe?
+            return self._error(request, 404, "Unknown Format: %r" % format)
         def cb(r):
             assert r is not None
             request.write(r)
             request.finish()
-
         status.addCallback(cb)
-
         return server.NOT_DONE_YET
 
-    def stations(self, request, format, instance, transport):
+    def station_list(self, request, transport, instance, format):
         try:
-            instance = self.instances[instance]
-        except KeyError:
+            instance = self.instances.get_instance(instance)
+        except UnknownInstance:
             return self._error(request, 404, "Unknown DLMon Instance: %r" % instance)
-        data['formats'] = dict(
-            # add instance name to urls
-            html='/html/instances/%s/stations' % instance,
-            json='/json/instances/%s/stations' % instance,
-        )
-        return self._render(request, format, template='stations', data=data,
-                instance=instance)
+        try:
+            status = instance.station_list.data.deferred_getitem(format, immediate=True)
+        except KeyError:
+            # Seriously, consolidate this crap somewhere else; decorator maybe?
+            return self._error(request, 404, "Unknown Format: %r" % format)
+        def cb(r):
+            assert r is not None
+            request.write(r)
+            request.finish()
+        status.addCallback(cb)
+        return server.NOT_DONE_YET
 
-    def station_status(self, request, format, instance, station, transport):
+    def station_status(self, request, transport, instance, station, format):
         try:
-            instance = self.instances[instance]
-        except KeyError:
+            instance = self.instances.get_instance(instance)
+        except UnknownInstance:
             return self._error(request, 404, "Unknown DLMon Instance: %r" % instance)
-        return self._render(request, format, template='station_status',
-                data=data, instance=instance, station=station)
+        try:
+            station = instance.instance_status.get_station(station)
+        except UnknownStation:
+            return self._error(request, 404, "Unknown Station: %r" % station)
+        try:
+            status = station.data.deferred_getitem(format, immediate=True)
+        except KeyError:
+            # Seriously, consolidate this crap somewhere else; decorator maybe?
+            return self._error(request, 404, "Unknown Format: %r" % format)
+        def cb(r):
+            assert r is not None
+            request.write(r)
+            request.finish()
+        status.addCallback(cb)
+        return server.NOT_DONE_YET
 
 
 def get_dispatcher(cfg, instances):
@@ -139,7 +153,7 @@ def get_dispatcher(cfg, instances):
 #    connect('index',           '/{format}')
 #    connect('instances',       '/{format}/instances')
     connect('instance_status', '/{transport}/dlmon/instances/{instance}/status{.format}')
-    connect('stations',        '/{transport}/dlmon/instances/{instance}/stations{.format}')
+    connect('station_list',    '/{transport}/dlmon/instances/{instance}/stations{.format}')
     connect('station_status',  '/{transport}/dlmon/instances/{instance}/stations/{station}/status{.format}')
     return d
 

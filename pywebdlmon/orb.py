@@ -64,6 +64,7 @@ class StatusPktSource(Orb):
         global pktno
         pktid, srcname, time, raw_packet, nbytes = r
         # I want Kudu to prevent pktid from ever being None.
+        # but why?
         assert pktid is not None
         pktno += 1
         log.msg("orbreap packet #%d: %d bytes" % (pktno, nbytes))

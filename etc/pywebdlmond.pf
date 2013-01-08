@@ -13,7 +13,7 @@ match .*/pf/(st|vtw)
 bind_address 0.0.0.0
 
 # Listen on this port.
-port 7000
+port 6999
 
 # Set the relative root URL - useful when behind a reverse proxy.
 # Defaults to "/"

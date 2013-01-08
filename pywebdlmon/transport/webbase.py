@@ -4,9 +4,12 @@ import os.path
 import json
 
 from twisted.python import log
+from twisted.web import server
 from twisted.web.resource import Resource
 from twisted.web.static import File as StaticFile
+
 from txroutes import Dispatcher
+
 from mako.template import Template
 from mako.lookup import TemplateLookup
 from mako import exceptions
@@ -90,14 +93,17 @@ class Controller(object):
             return self._error(request, 404, "Unknown DLMon Instance: %r" % instance)
 
         try:
-            status = instance.instance_status.deferred_getitem('json', immediate=True)
+            status = instance.instance_status.data.deferred_getitem('json', immediate=True)
         except KeyError:
             # Seriously, consolidate this crap somewhere else
             return self._error(request, 404, "Unknown Format: %r" % instance)
 
-        def cb(self, r):
+        def cb(r):
+            assert r is not None
             request.write(r)
             request.finish()
+
+        status.addCallback(cb)
 
         return server.NOT_DONE_YET
 

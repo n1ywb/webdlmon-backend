@@ -2,14 +2,14 @@
 <%!
 import json
 %>
-<h2>${instance} Stations</h2>
+<h2>{instance} Stations</h2>
 
 <p>
 Other Formats:
 <ul>
-    % for k,v in data['formats'].items():
-        <li><a href="${v}">${k}</a></li>
-    % endfor
+##    % for k,v in data['formats'].items():
+##        <li><a href="${v}">${k}</a></li>
+##    % endfor
 </ul>
 </p>
 
@@ -17,7 +17,7 @@ Stations:
 <ul>
     % for station in data['stations']:
     <li>
-        <a href="/html/instances/${instance}/stations/${station}/status">
+        <a href="/html/instances/{instance}/stations/${station}/status">
             ${station}
         </a>
     </li>

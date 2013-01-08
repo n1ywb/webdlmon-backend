@@ -12,6 +12,7 @@ import kudu.orb
 
 from orb import StatusPktSource
 
+
 FORMATS = ('html', 'json')
 
 REAP_TIMEOUT = 2.0
@@ -30,9 +31,12 @@ class DataObject(object):
     # this super should make templates and json
     # subclasses should connect incoming updates to html/json maker
     def update(self, data):
-        return
-        self.data['html'] = self.template.render(data=data)
-        self.data['json'] = json.dumps(data)
+        try:
+            self.data['html'] = self.template.render(data=data)
+        except Exception:
+            log.err("Error rendering template")
+            print text_error_template().render()
+        self.data['json'] = json.dumps(data, indent=4, sort_keys=True)
 
 
 class StationList(DataObject):
@@ -43,36 +47,38 @@ class StationList(DataObject):
         super(StationList, self).__init__(*args, **kwargs)
 
     def update(self, updated_stations):
-        self.stations |= updated_stations['dataloggers'].iterkeys()
-        data = {'stations': stations.keys()}
-        data = {str(self.__class__): data}
+        self.stations |= set(updated_stations['dataloggers'].iterkeys())
+        data = {'stations': list(self.stations)}
         super(StationList, self).update(data)
-        return data
+
 
 class Station(dict):
     pass
+
 
 class InstanceStatus(DataObject):
     template_name = 'instance_status.html'
 
     def __init__(self, *args, **kwargs):
+        # Store individual station statuses in here
         self.stations = dict()
+
+        # Store full instance status in here
+        self.status = dict()
+
         super(InstanceStatus, self).__init__(*args, **kwargs)
 
     def update(self, updated_stations):
-        return
-        status = dict()
         updated_stations = updated_stations['dataloggers']
-        for station_name, station_status in updated_stations.iteritems():
-            try:
-                station = self.stations[station_name]
-            except KeyError:
-                station = self.stations[station_name] = Station()
-            status.update(station.update(station_status))
-        data = dict(status=status)
-        data = {str(self.__class__): data}
+        self.status.update(updated_stations)
+#        for station_name, station_status in updated_stations.iteritems():
+#            try:
+#                station = self.stations[station_name]
+#            except KeyError:
+#                station = self.stations[station_name] = Station()
+#            status.update(station.update(station_status))
+        data = dict(instance_status=self.status)
         super(InstanceStatus, self).update(data)
-        return data
 
     def get_station(self, name):
         try:
@@ -97,7 +103,9 @@ class Instance(DataObject):
 #            d = source.connect()
 #            d.addCallback(on_connect)
             log.msg("connecting to src %r" % source)
+            # NOTE Using syncronous connect until we fix async connect
             kudu.orb.Orb.connect(source)
+            source.seek(kudu.orb.ORBOLDEST)
             self.reap(source)
         super(Instance, self).__init__(cfg, *args, **kwargs)
 
@@ -118,12 +126,12 @@ class Instance(DataObject):
         return r
 
     def update(self, updated_stations):
-        return
         self.instance_status.update(updated_stations)
-        self.station_set.update(updated_stations)
+        self.station_list.update(updated_stations)
+        return
+        # NOTE not sure yet what if any data instance should export
         data = dict()
         data['name'] = self.name
-        data = {str(self.__class__): data}
         super(Instance, self).update(data)
 
 

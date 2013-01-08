@@ -1,8 +1,6 @@
 #!/usr/bin/env python
 """Orb Status Packet Interface"""
 
-from pprint import pformat
-
 from twisted.python import log
 
 from antelope import _stock
@@ -11,8 +9,6 @@ from kudu.exc import OrbIncomplete
 from kudu.twisted.orb import Orb
 from kudu.pkt import Pkt
 
-
-REAP_TIMEOUT = 2
 
 pktno = 0
 
@@ -23,8 +19,6 @@ class StatusPktSource(Orb):
     def pfstring_to_pfdict(self, pfstring):
         """Return a dictionary from the 'string' field of a status packet which
         contains a parameter file."""
-        # TODO Should this be a method on DLSource since that's the only place
-        # it's used?
         pfstring = pfstring.strip('\0')
         pfptr = _stock._pfnew()
         try:
@@ -37,6 +31,7 @@ class StatusPktSource(Orb):
 
     def pfmorph(self, pfdict):
         """Apply arcane transformations to incoming status data."""
+        # TODO Would it be more appropriate for this to live in model.py?
         dls = dict()
         if pfdict.has_key('dls'):
             dls = pfdict['dls']
@@ -54,20 +49,14 @@ class StatusPktSource(Orb):
                 dls[sta]['isp2'] = "-"
                 dls[sta]['ti']   = "-"
         pfdict['dls'] = dls
-        # TODO Convert to JSON-able right here.
-        # TODO this could be added as a callback.
-        # TODO or even move this out of this module.
         return pfdict
 
     def on_reap(self, r):
         """Orbreap callback method."""
         global pktno
         pktid, srcname, time, raw_packet, nbytes = r
-        # I want Kudu to prevent pktid from ever being None.
-        # but why?
-        assert pktid is not None
         pktno += 1
-        log.msg("orbreap packet #%d: %d bytes" % (pktno, nbytes))
+        log.msg("%r reap pkt #%d: %d bytes" % (self.orbname, pktno, nbytes))
         # TODO Should this jazz be pushed down the callback chain?
         packet = Pkt(srcname, time, raw_packet)
         pkttypename = packet.pkttype['name']

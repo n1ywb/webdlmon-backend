@@ -25,12 +25,13 @@ class UnknownStation(Exception): pass
 
 class DataObject(object):
     def __init__(self, cfg):
+        self.cfg = cfg
         self.template = cfg.templates.get_template(self.template_name)
         self.data = ObservableDict(html='', json='')
 
-    def update(self, data):
+    def update(self, data, **kwargs):
         try:
-            self.data['html'] = self.template.render(data=data)
+            self.data['html'] = self.template.render(data=data, **kwargs).encode('utf-8')
         except Exception:
             log.err("Error rendering template")
             # twisted.log.msg munges the formatting; use print instead
@@ -42,28 +43,35 @@ class DataObject(object):
 class StationList(DataObject):
     template_name = 'stations.html'
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, instance_name, *args, **kwargs):
+        self.instance_name = instance_name
         self.stations=set()
         super(StationList, self).__init__(*args, **kwargs)
 
     def update(self, updated_stations):
         self.stations |= set(updated_stations['dataloggers'].iterkeys())
         data = {'station_list': list(self.stations)}
-        super(StationList, self).update(data)
+        super(StationList, self).update(data, instance=self.instance_name)
 
 
 class StationStatus(DataObject):
     template_name = 'station_status.html'
 
+    def __init__(self, instance_name, station_name, *args, **kwargs):
+        self.instance_name = instance_name
+        self.station_name = station_name
+        super(StationStatus, self).__init__(*args, **kwargs)
+
     def update(self, station_status):
         data = dict(station_status=station_status)
-        super(StationStatus, self).update(data)
+        super(StationStatus, self).update(data, instance=self.instance_name, station=self.station_name)
 
 
 class InstanceStatus(DataObject):
     template_name = 'instance_status.html'
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, instance_name, *args, **kwargs):
+        self.instance_name = instance_name
         # Individual station statuses
         self.stations = dict()
         # Full instance status in
@@ -72,33 +80,36 @@ class InstanceStatus(DataObject):
 
     def update(self, updated_stations):
         # Do my own update
-        updated_stations = updated_stations['dataloggers']
+        # TODO Geoff wants this to be a list, not a dict, b/c javascript sucks
         self.status.update(updated_stations)
-        data = dict(instance_status=self.status)
-        super(InstanceStatus, self).update(data)
+        status = dict(self.status)
+        status['dataloggers'] = status['dataloggers'].values()
+        data = dict(instance_status=status)
+        super(InstanceStatus, self).update(data, instance=self.instance_name)
         # Now update my stations
-        for station_name, station_status in updated_stations.iteritems():
+        for station_name, station_status in updated_stations['dataloggers'].iteritems():
             try:
                 station = self.stations[station_name]
             except KeyError:
-                station = self.stations[station_name] = Station()
+                station = StationStatus(self.instance_name, station_name, self.cfg)
+                self.stations[station_name] = station
             station.update(station_status)
 
-    def get_station(self, name):
+    def get_station(self, station_name):
         try:
-            return self.stations[name]
+            return self.stations[station_name]
         except KeyError:
-            raise UnknownStation(name)
+            raise UnknownStation(station_name)
 
 
 class Instance(DataObject):
     template_name = 'instance.html'
 
-    def __init__(self, name, sources, cfg, *args, **kwargs):
-        self.name = name
+    def __init__(self, instance_name, sources, cfg, *args, **kwargs):
+        self.instance_name = instance_name
         #self.status_update = StatusUpdate()
-        self.instance_status = InstanceStatus(cfg)
-        self.station_list = StationList(cfg)
+        self.instance_status = InstanceStatus(instance_name, cfg)
+        self.station_list = StationList(instance_name, cfg)
         for source in sources:
 # TODO Fix async connect packet corruption issue.
 #            def on_connect(r):
@@ -130,13 +141,13 @@ class Instance(DataObject):
         return r
 
     def update(self, updated_stations):
-        self.instance_status.update(updated_stations)
+        self.instance_status.update(updated_stations, )
         self.station_list.update(updated_stations)
         return
         # NOTE not sure yet what if any data instance should export. Probably
         # none. Some metadata would be handy though.
         data = dict()
-        data['name'] = self.name
+        data['name'] = self.instance_name
         super(Instance, self).update(data)
 
 
@@ -144,17 +155,17 @@ class InstanceCollection(object):
     # TODO this should export a list of instances.
     def __init__(self, cfg):
         instances = self.instances = {}
-        for name, srcs in cfg.instances.iteritems():
+        for instance_name, srcs in cfg.instances.iteritems():
             sources = [StatusPktSource(srcname, 'r', select=srccfg.match,
                                                      reject=srccfg.reject)
                         for srcname,srccfg in srcs.iteritems()]
-            instance = Instance(name, sources, cfg)
-            instances[name] = instance
-            log.msg("New dlmon instance: %s" % name)
+            instance = Instance(instance_name, sources, cfg)
+            instances[instance_name] = instance
+            log.msg("New dlmon instance: %s" % instance_name)
 
-    def get_instance(self, name):
+    def get_instance(self, instance_name):
         try:
-            return self.instances[name]
+            return self.instances[instance_name]
         except KeyError, e:
-            raise UnknownInstance(name)
+            raise UnknownInstance(instance_name)
 

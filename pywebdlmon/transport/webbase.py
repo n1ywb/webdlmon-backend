@@ -83,7 +83,7 @@ class Controller(object):
         )
         return self._render(request, format, template='instances', data=data)
 
-    def instance_status(self, request, format, instance):
+    def instance_status(self, request, format, instance, transport):
         # TODO Move exception handling to a common location for all handlers
         # TODO If this controller is to be unified with the WS controller, we
         # need a way to differentiate between sync and async requests.
@@ -93,7 +93,7 @@ class Controller(object):
             return self._error(request, 404, "Unknown DLMon Instance: %r" % instance)
 
         try:
-            status = instance.instance_status.data.deferred_getitem('json', immediate=True)
+            status = instance.instance_status.data.deferred_getitem(format, immediate=True)
         except KeyError:
             # Seriously, consolidate this crap somewhere else
             return self._error(request, 404, "Unknown Format: %r" % instance)
@@ -107,7 +107,7 @@ class Controller(object):
 
         return server.NOT_DONE_YET
 
-    def stations(self, request, format, instance):
+    def stations(self, request, format, instance, transport):
         try:
             instance = self.instances[instance]
         except KeyError:
@@ -120,7 +120,7 @@ class Controller(object):
         return self._render(request, format, template='stations', data=data,
                 instance=instance)
 
-    def station_status(self, request, format, instance, station):
+    def station_status(self, request, format, instance, station, transport):
         try:
             instance = self.instances[instance]
         except KeyError:
@@ -138,8 +138,8 @@ def get_dispatcher(cfg, instances):
 #    connect('static',          '/static/{file}')
 #    connect('index',           '/{format}')
 #    connect('instances',       '/{format}/instances')
-    connect('instance_status', '/{format}/instances/{instance}/status')
-    connect('stations',        '/{format}/instances/{instance}/stations')
-#    connect('station_status',  '/{format}/instances/{instance}/stations/{station}/status')
+    connect('instance_status', '/{transport}/dlmon/instances/{instance}/status{.format}')
+    connect('stations',        '/{transport}/dlmon/instances/{instance}/stations{.format}')
+    connect('station_status',  '/{transport}/dlmon/instances/{instance}/stations/{station}/status{.format}')
     return d
 

@@ -2,7 +2,7 @@
 <%!
 import json
 %>
-<h2>{instance} Stations</h2>
+<h2>${instance} Stations</h2>
 
 <p>
 Other Formats:
@@ -15,7 +15,7 @@ Other Formats:
 
 Stations:
 <ul>
-    % for station in data['stations']:
+    % for station in data['station_list']:
     <li>
         <a href="/html/instances/{instance}/stations/${station}/status">
             ${station}

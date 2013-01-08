@@ -1,6 +1,9 @@
 #!/usr/bin/env python
 """Orb Status Packet Interface"""
 
+import time
+from datetime import datetime
+
 from twisted.python import log
 
 from antelope import _stock
@@ -49,7 +52,17 @@ class StatusPktSource(Orb):
                 dls[sta]['isp2'] = "-"
                 dls[sta]['ti']   = "-"
         pfdict['dls'] = dls
-        return pfdict
+
+        # More arcane transforms
+        updated_stations=dict(dataloggers={}, metadata={})
+        timestamp = str(int(time.mktime(datetime.utcnow().timetuple())))
+        for stn,status in pfdict['dls'].items():
+            net, sep, stnonly = stn.partition('_')
+            updated_stations['dataloggers'][stn] = {
+                    'name': stn,
+                    'values': status }
+        updated_stations['metadata']['timestamp'] = timestamp
+        return updated_stations
 
     def on_reap(self, r):
         """Orbreap callback method."""
@@ -67,8 +80,8 @@ class StatusPktSource(Orb):
             pfdict = self.pfstring_to_pfdict(pfstring)
         else:
             pfdict = packet.pfdict
-        pfdict = self.pfmorph(pfdict)
-        return dict(dataloggers=pfdict['dls'])
+        updated_stations = self.pfmorph(pfdict)
+        return updated_stations
 
     def reap_timeout(self, *args, **kwargs):
         d = super(StatusPktSource, self).reap_timeout(*args, **kwargs)

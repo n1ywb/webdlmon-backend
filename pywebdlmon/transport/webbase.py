@@ -27,29 +27,6 @@ class Controller(object):
         request.setHeader("response-code", code)
         return str(self.cfg.templates.get_template('error.html').render(cfg=self.cfg, code=code, msg=msg))
 
-    def _render(self, request, format, template, data, **kwargs):
-        # TODO Need to keep this header-setting functionality
-        request.setHeader("response-code", 200)
-        if format == 'json':
-	    request.setHeader("content-type", "application/json")
-	    if request.args.has_key('callback'):
-		    request.setHeader("content-type", "application/javascript")
-		    return request.args['callback'][0] + '(' + self._jsondumps(data) + ')'
-            return self._jsondumps(data)
-
-        elif format == 'html':
-            request.setHeader("content-type", "text/html")
-            template = self.templates.get_template(template + '.html')
-            try:
-                r = template.render(cfg=self.cfg, data=data, **kwargs)
-            except Exception:
-                log.err(exceptions.text_error_template().render())
-                return self._error(request, 500, "Template Error")
-            return str(template.render(cfg=self.cfg, data=data, **kwargs))
-
-        else:
-            return self._error(request, 400, "Unknown format %r" % format)
-
     def root(self, request):
         return self.index(request, 'html')
 
@@ -84,25 +61,36 @@ class Controller(object):
         return self._render(request, format, template='instances', data=data)
 
     def _handler_helper(inner_func):
-        def wrapper_func(self, request, *args, **kwargs):
+        def wrapper_func(self, request, format, *args, **kwargs):
             try:
-                status = inner_func(self, request, *args, **kwargs)
+                status = inner_func(self, request, format, *args, **kwargs)
             except UnknownInstance, e:
                 return self._error(request, 404, "Unknown DLMon Instance '%s'" % e)
             except UnknownStation, e:
                 return self._error(request, 404, "Unknown Station: '%s'" % e)
             except UnknownFormat, e:
-                return self._error(request, 404, "Unknown Format: '%s'" % e)
-            def cb(r):
-                assert r is not None
-                request.write(r)
+                return self._error(request, 400, "Unknown Format: '%s'" % e)
+            def cb(buffer):
+                assert buffer is not None
+                request.setHeader("response-code", 200)
+                if format == 'json':
+                    request.setHeader("content-type", "application/json")
+                    # JSONP magic
+                    if request.args.has_key('callback'):
+                            request.setHeader("content-type", "application/javascript")
+                            buffer = request.args['callback'][0] + '(' + buffer + ')'
+                elif format == 'html':
+                    request.setHeader("content-type", "text/html")
+                else:
+                    return self._error(request, 400, "Unknown Format: '%s'" % format)
+                request.write(buffer)
                 request.finish()
             status.addCallback(cb)
             return server.NOT_DONE_YET
         return wrapper_func
 
     @_handler_helper
-    def instance_status(self, request, transport, instance, format):
+    def instance_status(self, request, format, transport, instance):
         # TODO If this controller is to be unified with the WS controller, we
         # need a way to differentiate between sync and async requests.
         instance = self.instances.get_instance(instance)
@@ -110,13 +98,13 @@ class Controller(object):
         return status
 
     @_handler_helper
-    def station_list(self, request, transport, instance, format):
+    def station_list(self, request, format, transport, instance):
         instance = self.instances.get_instance(instance)
         status = instance.station_list.get_format(format, immediate=True)
         return status
 
     @_handler_helper
-    def station_status(self, request, transport, instance, station, format):
+    def station_status(self, request, format, transport, instance, station):
         instance = self.instances.get_instance(instance)
         station = instance.instance_status.get_station(station)
         status = station.get_format(format, immediate=True)

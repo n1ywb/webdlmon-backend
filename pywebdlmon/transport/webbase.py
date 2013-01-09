@@ -16,12 +16,21 @@ from mako import exceptions
 
 from pywebdlmon.model import UnknownInstance, UnknownStation, UnknownFormat
 
+class UnknownTransport(Exception): pass
+
+def is_sync(transport):
+    if transport == 'http':
+        return True
+    elif transport == 'ws':
+        return false
+    raise UnknownTransport(transport)
+
 class Controller(object):
     def __init__(self, cfg, instances):
         self.cfg = cfg
         self.instances = instances
 
-    def _error(self, request, code, msg):
+    def _error(self, request, format, code, msg):
         # TODO return JSON error object for json queries
         request.setHeader("content-type", "text/html")
         request.setHeader("response-code", code)
@@ -63,13 +72,15 @@ class Controller(object):
     def _handler_helper(inner_func):
         def wrapper_func(self, request, format, *args, **kwargs):
             try:
-                status = inner_func(self, request, format, *args, **kwargs)
+                deferred = inner_func(self, request, format, *args, **kwargs)
             except UnknownInstance, e:
-                return self._error(request, 404, "Unknown DLMon Instance '%s'" % e)
+                return self._error(request, format, 404, "Unknown DLMon Instance '%s'" % e)
             except UnknownStation, e:
-                return self._error(request, 404, "Unknown Station: '%s'" % e)
+                return self._error(request, format, 404, "Unknown Station: '%s'" % e)
             except UnknownFormat, e:
-                return self._error(request, 400, "Unknown Format: '%s'" % e)
+                return self._error(request, format, 400, "Unknown Format: '%s'" % e)
+            except UnknownTransport, e:
+                return self._error(request, format, 400, "Unknown Transport: '%s'" % e)
             def cb(buffer):
                 assert buffer is not None
                 request.setHeader("response-code", 200)
@@ -82,33 +93,32 @@ class Controller(object):
                 elif format == 'html':
                     request.setHeader("content-type", "text/html")
                 else:
-                    return self._error(request, 400, "Unknown Format: '%s'" % format)
+                    return self._error(request, format, 400, "Unknown Format: '%s'" % format)
                 request.write(buffer)
                 request.finish()
-            status.addCallback(cb)
+            deferred.addCallback(cb)
             return server.NOT_DONE_YET
         return wrapper_func
 
+       
     @_handler_helper
     def instance_status(self, request, format, transport, instance):
-        # TODO If this controller is to be unified with the WS controller, we
-        # need a way to differentiate between sync and async requests.
         instance = self.instances.get_instance(instance)
-        status = instance.instance_status.get_format(format, immediate=True)
-        return status
+        deferred = instance.instance_status.get_format(format, immediate=is_sync(transport))
+        return deferred
 
     @_handler_helper
     def station_list(self, request, format, transport, instance):
         instance = self.instances.get_instance(instance)
-        status = instance.station_list.get_format(format, immediate=True)
-        return status
+        deferred = instance.station_list.get_format(format, immediate=is_sync(transport))
+        return deferred
 
     @_handler_helper
     def station_status(self, request, format, transport, instance, station):
         instance = self.instances.get_instance(instance)
         station = instance.instance_status.get_station(station)
-        status = station.get_format(format, immediate=True)
-        return status
+        deferred = station.get_format(format, immediate=is_sync(transport))
+        return deferred
 
 
 def get_dispatcher(cfg, instances):

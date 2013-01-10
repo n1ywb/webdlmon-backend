@@ -100,7 +100,6 @@ class Controller(object):
             return server.NOT_DONE_YET
         return wrapper_func
 
-       
     @_handler_helper
     def instance_status(self, request, format, transport, instance):
         instance = self.instances.get_instance(instance)

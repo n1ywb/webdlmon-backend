@@ -128,7 +128,7 @@ class Instance(DataObject):
             # NOTE Using sync connect until we fix async connect
             kudu.orb.Orb.connect(source)
             # NOTE this is handy for debugging but maybe not for production
-            source.seek(kudu.orb.ORBOLDEST)
+            # source.seek(kudu.orb.ORBOLDEST)
             self.reap(source)
         super(Instance, self).__init__(cfg, *args, **kwargs)
 

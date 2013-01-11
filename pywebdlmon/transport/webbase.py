@@ -51,6 +51,7 @@ class Controller(object):
         template = self.cfg.templates.get_template('error.html')
         request.write(str(template.render(cfg=self.cfg, code=code, msg=msg)))
         request.finish()
+        return server.NOT_DONE_YET
 
     def root(self, request):
         return self.index(request, 'html')
@@ -122,6 +123,7 @@ class Controller(object):
                 request.write(buffer)
                 if transport == 'http':
                     request.finish()
+                    return server.NOT_DONE_YET
                 elif transport == 'ws':
                     wrapper_func(self, request, format, transport, *args, **kwargs)
             deferred.addCallback(cb)
@@ -154,7 +156,7 @@ def get_dispatcher(cfg, instances):
     def connect(name, url):
         d.connect(name, url, c, action=name)
 #    connect('root',            '/')
-#    connect('static',          '/static/{file}')
+    connect('static',          '/static/{file}')
 #    connect('index',           '/{format}')
 #    connect('instances',       '/{format}/instances')
     connect('instance_status', '/{transport}/dlmon/instances/{instance}/status{.format}')

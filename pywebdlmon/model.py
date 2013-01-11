@@ -159,9 +159,11 @@ class Instance(DataObject):
         super(Instance, self).update(data)
 
 
-class InstanceCollection(object):
-    # TODO this should export a list of instances.
+class InstanceCollection(DataObject):
+    template_name = 'instances.html'
+
     def __init__(self, cfg):
+        super(InstanceCollection, self).__init__(cfg)
         instances = self.instances = {}
         for instance_name, srcs in cfg.instances.iteritems():
             sources = [StatusPktSource(srcname, 'r', select=srccfg.match,
@@ -170,6 +172,11 @@ class InstanceCollection(object):
             instance = Instance(instance_name, sources, cfg)
             instances[instance_name] = instance
             log.msg("New dlmon instance: %s" % instance_name)
+        self.update()
+
+    def update(self):
+        data = dict(instances=self.instances.keys())
+        super(InstanceCollection, self).update(data)
 
     def get_instance(self, instance_name):
         try:

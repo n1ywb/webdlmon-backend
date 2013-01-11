@@ -48,14 +48,12 @@ class Controller(object):
         # TODO return JSON error object for json queries
         request.setHeader("content-type", "text/html")
         request.setHeader("response-code", code)
-        if format == 'html':
-            template = self.cfg.templates.get_template('error.html')
-            buffer = str(template.render(cfg=self.cfg, code=code, msg=msg))
-        elif format == 'json':
+        if format == 'json':
             err = dict(error=dict(code=code, msg=msg))
             buffer = json.dumps(err)
         else:
-            raise UnknownFormat(format)
+            template = self.cfg.templates.get_template('error.html')
+            buffer = str(template.render(cfg=self.cfg, code=code, msg=msg))
         request.write(buffer)
         request.finish()
         return server.NOT_DONE_YET
@@ -156,6 +154,11 @@ class Controller(object):
         deferred = station.get_format(format, immediate=is_sync(transport))
         return deferred
 
+    @_handler_helper
+    def instances_handler(self, request, format, transport):
+        deferred = self.instances.get_format(format, immediate=is_sync(transport))
+        return deferred
+
 
 def get_dispatcher(cfg, instances):
     c = Controller(cfg, instances)
@@ -165,7 +168,7 @@ def get_dispatcher(cfg, instances):
 #    connect('root',            '/')
     connect('static',          '/static/{file}')
 #    connect('index',           '/{format}')
-#    connect('instances',       '/{format}/instances')
+    connect('instances_handler',       '/{transport}/dlmon/instances{.format}')
     connect('instance_status', '/{transport}/dlmon/instances/{instance}/status{.format}')
     connect('station_list',    '/{transport}/dlmon/instances/{instance}/stations{.format}')
     connect('station_status',  '/{transport}/dlmon/instances/{instance}/stations/{station}/status{.format}')

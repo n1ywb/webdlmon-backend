@@ -2,41 +2,21 @@
 
 <h2>Named DLMon Instances</h2>
 
-<p>
-Other Formats:
-<ul>
-    % for k,v in data['formats'].items():
-        <li><a href="${v}">${k}</a></li>
-    % endfor
-</ul>
-</p>
+##<p>
+##Other Formats:
+##<ul>
+##    % for k,v in data['formats'].items():
+##        <li><a href="${v}">${k}</a></li>
+##    % endfor
+##</ul>
+##</p>
 
 
 Instances:
 <ul>
 % for instance in data['instances']:
 <li>
-    ${instance['name']}
-    <ul>
-        <li>
-            Full status
-            <ul>
-                % for fmt in instance['status']:
-                <li><a href="/${fmt}/instances/${instance['name']}/status">${fmt}</a></li>
-                % endfor
-            </ul>
-        </li>
-
-        <li>
-            Station list
-            <ul>
-                % for fmt in instance['stations']:
-                <li><a href="/${fmt}/instances/${instance['name']}/stations">${fmt}</a></li>
-                % endfor
-            </ul>
-        </li>
-
-    </ul>
+    ${instance}
 </li>
 % endfor
 </ul>

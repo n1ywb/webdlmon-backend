@@ -4,7 +4,7 @@
 <meta charset="utf-8"/>
 <script>
     var socket = new WebSocket(
-        "ws://anfdevl.ucsd.edu:6999/ws/instances/dlmon/stations/TA_O50A/status"
+        "ws://anfdevl.ucsd.edu:6999/ws/dlmon/instances/dlmon/update.json"
     );
     socket.onopen = function (event) {
         socket.onmessage = function (event) {

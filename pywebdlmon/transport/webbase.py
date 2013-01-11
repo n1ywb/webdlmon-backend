@@ -80,17 +80,6 @@ class Controller(object):
                    )
         return self._render(request, format, template='index', data=data)
 
-    def instances(self, request, format):
-        stations = self.instances.keys()
-        data = dict(
-                formats=dict(
-                    html='/html/instances',
-                    json='/json/instances',
-                ),
-                # this one is sort of special
-        )
-        return self._render(request, format, template='instances', data=data)
-
     def _handler_helper(inner_func):
         def wrapper_func(self, request, format, transport, *args, **kwargs):
             # TODO This comparison should look at the ws:// part of the

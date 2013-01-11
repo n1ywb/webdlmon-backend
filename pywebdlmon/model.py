@@ -83,15 +83,15 @@ class InstanceStatus(DataObject):
         # Individual station statuses
         self.stations = dict()
         # Full instance status in
-        self.status = dict()
+        self.status = dict(metadata=dict(), dataloggers=dict())
         super(InstanceStatus, self).__init__(*args, **kwargs)
 
     def update(self, updated_stations):
         # Do my own update
         # TODO Geoff wants this to be a list, not a dict, b/c javascript sucks
-        self.status.update(updated_stations)
-        status = dict(self.status)
-        status['dataloggers'] = status['dataloggers'].values()
+        self.status['dataloggers'].update(updated_stations['dataloggers'])
+        self.status['metadata'] = updated_stations['metadata']
+        status = dict(metadata=self.status['metadata'], dataloggers=self.status['dataloggers'].values())
         data = dict(instance_status=status)
         super(InstanceStatus, self).update(data, instance=self.instance_name)
         # Now update my stations
@@ -165,7 +165,7 @@ class Instance(DataObject):
         return r
 
     def update(self, updated_stations):
-        self.instance_status.update(updated_stations, )
+        self.instance_status.update(updated_stations)
         self.station_list.update(updated_stations)
         self.instance_update.update(updated_stations)
         return

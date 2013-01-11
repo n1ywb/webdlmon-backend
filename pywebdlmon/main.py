@@ -12,18 +12,9 @@ from twisted.python import log
 from twisted.internet import reactor
 from twisted.web.server import Site
 
-# Web sockets
-from txws import WebSocketFactory
-
-# StreamProxy
-from streamprox.proxy import BufferingProxyFactory
-from streamprox.packet_buffer import PacketBuffer
-from streamprox.dispatcher import ExampleDispatcher
-
 # This project
 import config
 from transport.webbase import get_dispatcher
-from transport.ws import StreamFactory
 from model import InstanceCollection
 
 
@@ -47,22 +38,7 @@ class App(object):
         # Sending a keepalive might be good too
         log.msg('Setup TCP port:')
 
-        factory = BufferingProxyFactory()
-        factory.buffer_factory = PacketBuffer
-
-        websocketfactory = WebSocketFactory(StreamFactory(dispatcher,
-            instances))
-
-        # route /ws to websockets, everything else including / to http
-        ExampleDispatcher.prefix1 = "/ws"
-        ExampleDispatcher.site1 = websocketfactory
-
-        ExampleDispatcher.prefix2 = "/"
-        ExampleDispatcher.site2 = website
-
-        factory.dispatcher_factory = ExampleDispatcher
-
-        reactor.listenTCP(cfg.port, factory, interface=cfg.bind_address)
+        reactor.listenTCP(cfg.port, website, interface=cfg.bind_address)
         log.msg('\t\t\t\t\t=> OK')
 
         log.msg('Run reactor:')

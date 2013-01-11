@@ -7,34 +7,50 @@ from twisted.python import log
 from twisted.web import server
 from twisted.web.resource import Resource
 from twisted.web.static import File as StaticFile
+from twisted.protocols.policies import ProtocolWrapper
 
 from txroutes import Dispatcher
+
+# TODO MAKE IT WORK WITH AUTOBAHN
+from autobahn.resource import WebSocketResource
+from autobahn.websocket import WebSocketServerFactory, \
+                               WebSocketServerProtocol
 
 from mako.template import Template
 from mako.lookup import TemplateLookup
 from mako import exceptions
 
+
 from pywebdlmon.model import UnknownInstance, UnknownStation, UnknownFormat
+from pywebdlmon.transport import wsmagic
+from pywebdlmon.transport.ws import RequestishProtocol
+
 
 class UnknownTransport(Exception): pass
+
+class WebsocketsError(Exception): pass
 
 def is_sync(transport):
     if transport == 'http':
         return True
     elif transport == 'ws':
-        return false
+        return False
     raise UnknownTransport(transport)
 
 class Controller(object):
     def __init__(self, cfg, instances):
         self.cfg = cfg
         self.instances = instances
+        self._ws_factory = WebSocketServerFactory("ws://0.0.0.0:6999")
+        self._ws_factory.protocol = RequestishProtocol
 
     def _error(self, request, format, code, msg):
         # TODO return JSON error object for json queries
         request.setHeader("content-type", "text/html")
         request.setHeader("response-code", code)
-        return str(self.cfg.templates.get_template('error.html').render(cfg=self.cfg, code=code, msg=msg))
+        template = self.cfg.templates.get_template('error.html')
+        request.write(str(template.render(cfg=self.cfg, code=code, msg=msg)))
+        request.finish()
 
     def root(self, request):
         return self.index(request, 'html')
@@ -70,10 +86,19 @@ class Controller(object):
         return self._render(request, format, template='instances', data=data)
 
     def _handler_helper(inner_func):
-        def wrapper_func(self, request, format, *args, **kwargs):
+        def wrapper_func(self, request, format, transport, *args, **kwargs):
+            # TODO This comparison should look at the ws:// part of the
+            # uri, not the /ws/ part.
+            if transport == 'ws':
+                # This magically changes the connection from HTTP to
+                # websockets.
+                if not isinstance(request, RequestishProtocol):
+                    request = wsmagic.upgrade(request, self._ws_factory)
             try:
-                deferred = inner_func(self, request, format, *args, **kwargs)
+                deferred = inner_func(self, request, format, transport, *args, **kwargs)
             except UnknownInstance, e:
+                # TODO This won't work on a WS request, will it? Nope... Enter
+                # RequestishProtocol
                 return self._error(request, format, 404, "Unknown DLMon Instance '%s'" % e)
             except UnknownStation, e:
                 return self._error(request, format, 404, "Unknown Station: '%s'" % e)
@@ -95,7 +120,10 @@ class Controller(object):
                 else:
                     return self._error(request, format, 400, "Unknown Format: '%s'" % format)
                 request.write(buffer)
-                request.finish()
+                if transport == 'http':
+                    request.finish()
+                elif transport == 'ws':
+                    wrapper_func(self, request, format, transport, *args, **kwargs)
             deferred.addCallback(cb)
             return server.NOT_DONE_YET
         return wrapper_func

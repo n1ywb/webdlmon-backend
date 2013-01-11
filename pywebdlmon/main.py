@@ -13,9 +13,9 @@ from twisted.internet import reactor
 from twisted.web.server import Site
 
 # This project
-import config
-from transport.webbase import get_dispatcher
-from model import InstanceCollection
+from pywebdlmon import config
+from pywebdlmon.controller import get_dispatcher
+from pywebdlmon.model import InstanceCollection
 
 
 class App(object):

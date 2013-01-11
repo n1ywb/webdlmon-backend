@@ -14,8 +14,8 @@ from autobahn.websocket import WebSocketServerFactory
 from mako import exceptions
 
 from pywebdlmon.model import UnknownInstance, UnknownStation, UnknownFormat
-from pywebdlmon.transport import wsmagic
-from pywebdlmon.transport.ws import RequestishProtocol
+from pywebdlmon import wsmagic
+from pywebdlmon.ws import RequestishProtocol
 
 
 class UnknownTransport(Exception): pass

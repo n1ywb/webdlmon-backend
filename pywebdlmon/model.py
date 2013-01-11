@@ -10,7 +10,7 @@ from kudu.exc import OrbIncomplete
 from kudu.twisted.util import ObservableDict
 import kudu.orb
 
-from orb import StatusPktSource
+from pywebdlmon.orb import StatusPktSource
 
 
 FORMATS = ('html', 'json')

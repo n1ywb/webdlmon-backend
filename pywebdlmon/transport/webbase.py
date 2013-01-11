@@ -48,8 +48,15 @@ class Controller(object):
         # TODO return JSON error object for json queries
         request.setHeader("content-type", "text/html")
         request.setHeader("response-code", code)
-        template = self.cfg.templates.get_template('error.html')
-        request.write(str(template.render(cfg=self.cfg, code=code, msg=msg)))
+        if format == 'html':
+            template = self.cfg.templates.get_template('error.html')
+            buffer = str(template.render(cfg=self.cfg, code=code, msg=msg))
+        elif format == 'json':
+            err = dict(error=dict(code=code, msg=msg))
+            buffer = json.dumps(err)
+        else:
+            raise UnknownFormat(format)
+        request.write(buffer)
         request.finish()
         return server.NOT_DONE_YET
 

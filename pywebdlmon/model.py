@@ -110,6 +110,20 @@ class InstanceStatus(DataObject):
             raise UnknownStation(station_name)
 
 
+class InstanceUpdate(DataObject):
+    template_name = 'instance_update.html'
+
+    def __init__(self, instance_name, *args, **kwargs):
+        self.instance_name = instance_name
+        super(InstanceUpdate, self).__init__(*args, **kwargs)
+
+    def update(self, updated_stations):
+        status = dict(updated_stations)
+        status['dataloggers'] = status['dataloggers'].values()
+        data = dict(instance_update=status)
+        super(InstanceUpdate, self).update(data, instance=self.instance_name)
+
+
 class Instance(DataObject):
     template_name = 'instance.html'
 
@@ -118,6 +132,7 @@ class Instance(DataObject):
         #self.status_update = StatusUpdate()
         self.instance_status = InstanceStatus(instance_name, cfg)
         self.station_list = StationList(instance_name, cfg)
+        self.instance_update = InstanceUpdate(instance_name, cfg)
         for source in sources:
 # TODO Fix async connect packet corruption issue.
 #            def on_connect(r):
@@ -151,6 +166,7 @@ class Instance(DataObject):
     def update(self, updated_stations):
         self.instance_status.update(updated_stations, )
         self.station_list.update(updated_stations)
+        self.instance_update.update(updated_stations)
         return
         # NOTE not sure yet what if any data instance should export. Probably
         # none. Some metadata would be handy though.

@@ -148,6 +148,12 @@ class Controller(object):
         deferred = self.instances.get_format(format, immediate=is_sync(transport))
         return deferred
 
+    @_handler_helper
+    def instance_update(self, request, format, transport, instance):
+        instance = self.instances.get_instance(instance)
+        deferred = instance.instance_update.get_format(format, immediate=is_sync(transport))
+        return deferred
+
 
 def get_dispatcher(cfg, instances):
     c = Controller(cfg, instances)
@@ -159,6 +165,7 @@ def get_dispatcher(cfg, instances):
 #    connect('index',           '/{format}')
     connect('instances_handler',       '/{transport}/dlmon/instances{.format}')
     connect('instance_status', '/{transport}/dlmon/instances/{instance}/status{.format}')
+    connect('instance_update', '/{transport}/dlmon/instances/{instance}/update{.format}')
     connect('station_list',    '/{transport}/dlmon/instances/{instance}/stations{.format}')
     connect('station_status',  '/{transport}/dlmon/instances/{instance}/stations/{station}/status{.format}')
     return d

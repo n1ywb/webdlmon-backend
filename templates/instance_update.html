@@ -1,0 +1,20 @@
+<%inherit file="template.html"/>
+<%!
+import json
+%>
+<h2>${instance} Update</h2>
+
+##<p>
+##Other Formats:
+##<ul>
+##    % for k,v in data['formats'].items():
+##        <li><a href="${v}">${k}</a></li>
+##    % endfor
+##</ul>
+##</p>
+
+Update:
+<pre>
+${json.dumps(data['instance_update'], indent=4, sort_keys=True)}
+</pre>
+

@@ -3,6 +3,7 @@
 
 import time
 from datetime import datetime
+from calendar import timegm
 
 from twisted.python import log
 
@@ -32,8 +33,9 @@ class StatusPktSource(Orb):
         finally:
             _stock._pffree(pfptr)
 
-    def pfmorph(self, pfdict):
+    def pfmorph(self, pfdict, timestamp):
         """Apply arcane transformations to incoming status data."""
+        rx_timestamp = str(int(timegm(datetime.utcnow().utctimetuple())))
         # TODO Would it be more appropriate for this to live in model.py?
         dls = dict()
         if pfdict.has_key('dls'):
@@ -55,23 +57,24 @@ class StatusPktSource(Orb):
 
         # More arcane transforms
         updated_stations=dict(dataloggers={}, metadata={})
-        timestamp = str(int(time.mktime(datetime.utcnow().timetuple())))
         for stn,status in pfdict['dls'].items():
             net, sep, stnonly = stn.partition('_')
             updated_stations['dataloggers'][stn] = {
-                    'name': stn,
-                    'values': status }
-        updated_stations['metadata']['timestamp'] = timestamp
+                        'name': stn,
+                        'values': status,
+                        'timestamp': timestamp,
+                    }
+        updated_stations['metadata']['timestamp'] = rx_timestamp
         return updated_stations
 
     def on_reap(self, r):
         """Orbreap callback method."""
         global pktno
-        pktid, srcname, time, raw_packet, nbytes = r
+        pktid, srcname, timestamp, raw_packet, nbytes = r
         pktno += 1
         log.msg("%r reap pkt #%d: %d bytes" % (self.orbname, pktno, nbytes))
         # TODO Should this jazz be pushed down the callback chain?
-        packet = Pkt(srcname, time, raw_packet)
+        packet = Pkt(srcname, timestamp, raw_packet)
         pkttypename = packet.pkttype['name']
         if pkttypename not in ('st', 'pf', 'stash'):
             raise OrbIncomplete()
@@ -80,7 +83,7 @@ class StatusPktSource(Orb):
             pfdict = self.pfstring_to_pfdict(pfstring)
         else:
             pfdict = packet.pfdict
-        updated_stations = self.pfmorph(pfdict)
+        updated_stations = self.pfmorph(pfdict, timestamp)
         return updated_stations
 
     def reap_timeout(self, *args, **kwargs):

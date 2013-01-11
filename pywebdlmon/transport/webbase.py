@@ -1,25 +1,17 @@
 #!/usr/bin/env python
 
-import os.path
 import json
+import os.path
 
 from twisted.python import log
 from twisted.web import server
-from twisted.web.resource import Resource
 from twisted.web.static import File as StaticFile
-from twisted.protocols.policies import ProtocolWrapper
 
 from txroutes import Dispatcher
 
-# TODO MAKE IT WORK WITH AUTOBAHN
-from autobahn.resource import WebSocketResource
-from autobahn.websocket import WebSocketServerFactory, \
-                               WebSocketServerProtocol
+from autobahn.websocket import WebSocketServerFactory
 
-from mako.template import Template
-from mako.lookup import TemplateLookup
 from mako import exceptions
-
 
 from pywebdlmon.model import UnknownInstance, UnknownStation, UnknownFormat
 from pywebdlmon.transport import wsmagic

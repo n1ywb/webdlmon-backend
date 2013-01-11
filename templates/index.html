@@ -1,26 +1,21 @@
 <%inherit file="template.html"/>
 
-<h2>Index</h2>
+<h2>Home Page</h2>
 
-<p>
-Other Formats:
-<ul>
-    % for k,v in data['formats'].items():
-        <li><a href="${v}">${k}</a></li>
-    % endfor
-</ul>
-</p>
 
-Resources:
+<h3>Resources:</h3>
 
 <ul>
     <li>
-        DLMon Instances
-        <ul>
-            % for k,v in data['resources']['instances'].items():
-            <li><a href="${v}">${k}</a></li>
-            % endfor
-        </ul>
+        <a href="/http/dlmon/instances.html">DLMon Instances</a>
+    </li>
+</ul>
+
+<h3>Development:</h3>
+
+<ul>
+    <li>
+        <a href="https://github.com/n1ywb/webdlmon-backend">Server Git Repo</a>
     </li>
 </ul>
 

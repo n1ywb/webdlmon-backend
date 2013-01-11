@@ -51,7 +51,7 @@ class Controller(object):
         return server.NOT_DONE_YET
 
     def root(self, request):
-        return self.index(request, 'html')
+        return self.cfg.templates.get_template('index.html').render().encode('utf-8')
 
     def static(self, request, file):
         # TODO santize file
@@ -148,7 +148,7 @@ def get_dispatcher(cfg, instances):
     d = Dispatcher()
     def connect(name, url):
         d.connect(name, url, c, action=name)
-#    connect('root',            '/')
+    connect('root',            '/')
     connect('static',          '/static/{file}')
 #    connect('index',           '/{format}')
     connect('instances_handler',       '/{transport}/dlmon/instances{.format}')

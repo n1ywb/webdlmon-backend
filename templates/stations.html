@@ -4,20 +4,20 @@ import json
 %>
 <h2>${instance} Stations</h2>
 
-<p>
-Other Formats:
-<ul>
+##<p>
+##Other Formats:
+##<ul>
 ##    % for k,v in data['formats'].items():
 ##        <li><a href="${v}">${k}</a></li>
 ##    % endfor
-</ul>
-</p>
+##</ul>
+##</p>
 
 Stations:
 <ul>
     % for station in data['station_list']:
     <li>
-        <a href="/html/instances/{instance}/stations/${station}/status">
+        <a href="/http/dlmon/instances/${instance}/stations/${station}/status.html">
             ${station}
         </a>
     </li>

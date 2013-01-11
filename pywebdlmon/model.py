@@ -39,7 +39,8 @@ class DataObject(object):
             # twisted.log.msg munges the formatting; use print instead
             print text_error_template().render()
             raise
-        self.data['json'] = json.dumps(data, indent=4, sort_keys=True)
+        #self.data['json'] = json.dumps(data, indent=4, sort_keys=True)
+        self.data['json'] = json.dumps(data)
 
     def get_format(self, format, immediate):
         if self.data.has_key(format):

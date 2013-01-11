@@ -118,10 +118,11 @@ class InstanceUpdate(DataObject):
         super(InstanceUpdate, self).__init__(*args, **kwargs)
 
     def update(self, updated_stations):
-        status = dict(updated_stations)
-        status['dataloggers'] = status['dataloggers'].values()
-        data = dict(instance_update=status)
-        super(InstanceUpdate, self).update(data, instance=self.instance_name)
+        if len(updated_stations['dataloggers']) > 0:
+            status = dict(updated_stations)
+            status['dataloggers'] = status['dataloggers'].values()
+            data = dict(instance_update=status)
+            super(InstanceUpdate, self).update(data, instance=self.instance_name)
 
 
 class Instance(DataObject):

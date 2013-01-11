@@ -74,18 +74,14 @@ class Controller(object):
 
     def _handler_helper(inner_func):
         def wrapper_func(self, request, format, transport, *args, **kwargs):
-            # TODO This comparison should look at the ws:// part of the
-            # uri, not the /ws/ part.
-            if transport == 'ws':
-                # This magically changes the connection from HTTP to
-                # websockets.
-                if not isinstance(request, RequestishProtocol):
+            if not isinstance(request, RequestishProtocol):
+                if request.getHeader('Upgrade') == 'websocket':
+                    # This magically changes the connection from HTTP to
+                    # websockets.
                     request = wsmagic.upgrade(request, self._ws_factory)
             try:
                 deferred = inner_func(self, request, format, transport, *args, **kwargs)
             except UnknownInstance, e:
-                # TODO This won't work on a WS request, will it? Nope... Enter
-                # RequestishProtocol
                 return self._error(request, format, 404, "Unknown DLMon Instance '%s'" % e)
             except UnknownStation, e:
                 return self._error(request, format, 404, "Unknown Station: '%s'" % e)
@@ -107,11 +103,11 @@ class Controller(object):
                 else:
                     return self._error(request, format, 400, "Unknown Format: '%s'" % format)
                 request.write(buffer)
-                if transport == 'http':
+                if isinstance(request, RequestishProtocol):
+                    wrapper_func(self, request, format, transport, *args, **kwargs)
+                else:
                     request.finish()
                     return server.NOT_DONE_YET
-                elif transport == 'ws':
-                    wrapper_func(self, request, format, transport, *args, **kwargs)
             deferred.addCallback(cb)
             return server.NOT_DONE_YET
         return wrapper_func

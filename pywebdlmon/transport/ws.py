@@ -17,3 +17,6 @@ class RequestishProtocol(WebSocketServerProtocol):
         # TODO: is this right?
         self.transport.close()
 
+    def getheader(self, name):
+        return None
+

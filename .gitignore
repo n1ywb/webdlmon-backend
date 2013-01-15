@@ -37,4 +37,5 @@ nosetests.xml
 ~*
 *~
 *.swp
+*.swo
 

@@ -76,9 +76,13 @@ class Controller(object):
         def wrapper_func(self, request, format, transport, *args, **kwargs):
             if not isinstance(request, RequestishProtocol):
                 if request.getHeader('Upgrade') == 'websocket':
-                    # This magically changes the connection from HTTP to
-                    # websockets.
+                    # Change the connection from HTTP to websockets.
                     request = wsmagic.upgrade(request, self._ws_factory)
+            if not hasattr(request, 'repeat'):
+                # Handlers can query this flag to change their behavior for the
+                # first request, e.g. to send the current state first then
+                # subsequent updates.
+                request.repeat = False
             try:
                 deferred = inner_func(self, request, format, transport, *args, **kwargs)
             except UnknownInstance, e:
@@ -89,6 +93,7 @@ class Controller(object):
                 return self._error(request, format, 400, "Unknown Format: '%s'" % e)
             except UnknownTransport, e:
                 return self._error(request, format, 400, "Unknown Transport: '%s'" % e)
+            request.repeat = True
             def cb(buffer):
                 assert buffer is not None
                 request.setHeader("response-code", 200)
@@ -142,6 +147,17 @@ class Controller(object):
         deferred = instance.instance_update.get_format(format, immediate=is_sync(transport))
         return deferred
 
+    @_handler_helper
+    def instance_update_with_status(self, request, format, transport, instance):
+        instance = self.instances.get_instance(instance)
+        if request.repeat:
+            deferred = instance.instance_update.get_format(format, immediate=is_sync(transport))
+        else:
+            # Send full status immediately.
+            deferred = instance.instance_status.get_format(format, immediate=True)
+        return deferred
+
+
 
 def get_dispatcher(cfg, instances):
     c = Controller(cfg, instances)
@@ -154,6 +170,7 @@ def get_dispatcher(cfg, instances):
     connect('instances_handler',       '/{transport}/dlmon/instances{.format}')
     connect('instance_status', '/{transport}/dlmon/instances/{instance}/status{.format}')
     connect('instance_update', '/{transport}/dlmon/instances/{instance}/update{.format}')
+    connect('instance_update_with_status', '/{transport}/dlmon/instances/{instance}/update_w_status{.format}')
     connect('station_list',    '/{transport}/dlmon/instances/{instance}/stations{.format}')
     connect('station_status',  '/{transport}/dlmon/instances/{instance}/stations/{station}/status{.format}')
     return d

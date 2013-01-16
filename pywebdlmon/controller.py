@@ -57,21 +57,6 @@ class Controller(object):
         # TODO santize file
         return StaticFile(os.path.join('static', file)).render(request)
 
-    def index(self, request, format):
-        data = dict(
-                    formats=dict(
-                        html='/html',
-                        json='/json',
-                    ),
-                   resources=dict(
-                       instances=dict(
-                           html='/html/instances',
-                           json='/json/instances'
-                           )
-                       )
-                   )
-        return self._render(request, format, template='index', data=data)
-
     def _handler_helper(inner_func):
         def wrapper_func(self, request, format, transport, *args, **kwargs):
             if not isinstance(request, RequestishProtocol):
@@ -133,7 +118,11 @@ class Controller(object):
     def station_status(self, request, format, transport, instance, station):
         instance = self.instances.get_instance(instance)
         station = instance.instance_status.get_station(station)
-        deferred = station.get_format(format, immediate=is_sync(transport))
+        if request.repeat:
+            deferred = station.get_format(format, immediate=is_sync(transport))
+        else:
+            # Send full status immediately.
+            deferred = station.get_format(format, immediate=True)
         return deferred
 
     @_handler_helper
@@ -166,7 +155,6 @@ def get_dispatcher(cfg, instances):
         d.connect(name, url, c, action=name)
     connect('root',            '/')
     connect('static',          '/static/{file}')
-#    connect('index',           '/{format}')
     connect('instances_handler',       '/{transport}/dlmon/instances{.format}')
     connect('instance_status', '/{transport}/dlmon/instances/{instance}/status{.format}')
     connect('instance_update', '/{transport}/dlmon/instances/{instance}/update{.format}')

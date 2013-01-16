@@ -118,12 +118,6 @@ class Controller(object):
         return wrapper_func
 
     @_handler_helper
-    def instance_status(self, request, format, transport, instance):
-        instance = self.instances.get_instance(instance)
-        deferred = instance.instance_status.get_format(format, immediate=is_sync(transport))
-        return deferred
-
-    @_handler_helper
     def station_list(self, request, format, transport, instance):
         instance = self.instances.get_instance(instance)
         deferred = instance.station_list.get_format(format, immediate=is_sync(transport))
@@ -142,13 +136,7 @@ class Controller(object):
         return deferred
 
     @_handler_helper
-    def instance_update(self, request, format, transport, instance):
-        instance = self.instances.get_instance(instance)
-        deferred = instance.instance_update.get_format(format, immediate=is_sync(transport))
-        return deferred
-
-    @_handler_helper
-    def instance_update_with_status(self, request, format, transport, instance):
+    def instance_status(self, request, format, transport, instance):
         instance = self.instances.get_instance(instance)
         if request.repeat:
             deferred = instance.instance_update.get_format(format, immediate=is_sync(transport))
@@ -158,20 +146,16 @@ class Controller(object):
         return deferred
 
 
-
 def get_dispatcher(cfg, instances):
     c = Controller(cfg, instances)
     d = Dispatcher()
     def connect(name, url):
         d.connect(name, url, c, action=name)
-    connect('root',            '/')
-    connect('static',          '/static/{file}')
-#    connect('index',           '/{format}')
-    connect('instances_handler',       '/{transport}/dlmon/instances{.format}')
-    connect('instance_status', '/{transport}/dlmon/instances/{instance}/status{.format}')
-    connect('instance_update', '/{transport}/dlmon/instances/{instance}/update{.format}')
-    connect('instance_update_with_status', '/{transport}/dlmon/instances/{instance}/update_w_status{.format}')
-    connect('station_list',    '/{transport}/dlmon/instances/{instance}/stations{.format}')
-    connect('station_status',  '/{transport}/dlmon/instances/{instance}/stations/{station}/status{.format}')
+    connect('root',              '/')
+    connect('static',            '/static/{file}')
+    connect('instances_handler', '/{transport}/dlmon/instances{.format}')
+    connect('instance_status',   '/{transport}/dlmon/instances/{instance}/status{.format}')
+    connect('station_list',      '/{transport}/dlmon/instances/{instance}/stations{.format}')
+    connect('station_status',    '/{transport}/dlmon/instances/{instance}/stations/{station}/status{.format}')
     return d
 

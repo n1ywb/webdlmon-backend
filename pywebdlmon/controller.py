@@ -105,7 +105,10 @@ class Controller(object):
     @_handler_helper
     def station_list(self, request, format, transport, instance):
         instance = self.instances.get_instance(instance)
-        deferred = instance.station_list.get_format(format, immediate=is_sync(transport))
+        if request.repeat:
+            deferred = instance.station_list.get_format(format, immediate=is_sync(transport))
+        else:
+            deferred = instance.station_list.get_format(format, immediate=True)
         return deferred
 
     @_handler_helper
@@ -121,7 +124,8 @@ class Controller(object):
 
     @_handler_helper
     def instances_handler(self, request, format, transport):
-        deferred = self.instances.get_format(format, immediate=is_sync(transport))
+        # This data is static during runtime.
+        deferred = self.instances.get_format(format, immediate=True)
         return deferred
 
     @_handler_helper

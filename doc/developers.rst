@@ -51,6 +51,12 @@ Other arguments: Handlers may accept arbitrary arguments parsed from the URL
 path. ``instance`` and ``stations`` are common. Please refer to the Python
 Routes documentation for details on url to handler mapping.
 
+URL to Handler Mapping
+''''''''''''''''''''''
+
+The get_dispatcher function in controller.py is responsible for connecting
+handlers to URLs using txroutes, a Twisted adapter for the Routes packages.
+
 Model Objects
 -------------
 
@@ -79,44 +85,56 @@ action but must return a string which is then stored in data['html'].
 Design Discussion
 -----------------
 
+This application primarily receives datalogger status packets from Antelope
+orbs and transforms those data into web-friendly data products and makes them
+available to both synchronous clients and asynchronous streaming clients. 
+
 When designing this application, my initial approach was similar to most other
 web applications; render data into strings in response to client requests.
 
 This design has the advantage that data products are only rendered when they
 are actually being used, avoiding rendering a bunch of data that nobody is
-using at a point in time. This probably has good average-case performance when
-the volume of incoming data is large and the number of clients is small.
-However when the inverse is true, the worst case performance could be quite
-bad.
+using at a point in time. This should have good average-case performance when
+the volume of incoming data is large and the number of clients is small.  When
+the inverse is true, however, the worst case performance could be quite bad.
 
 One important difference from other web apps is that the data served up is NOT
-dynamic; regardless of when the data is rendered, all users requesting a
-particular resource see the same data. Thus rendering data in response to
-queries seems wasteful whenever multiple users are requesting the same
-resource.
+dynamic. It's not like a blog app or something where every request pulls some
+data from a database and dynamically renders a template with it; regardless of
+when the data is rendered, all users requesting a particular resource see the
+same data, until the next packet arrives from the orb. Thus rendering data in
+response to queries is wasteful when multiple users request the same resource.
 
-The obvious solution to the performance issue is some sort of cacheing scheme;
-render the data on the first request, cache it for subsequent requests, and
-flush it when new data arrives from the orb. This scheme would certainly work
-although it adds an awful lot of complexity to the application. Caching is
-notoriously difficult to get right. 
+The obvious solution is to implement some sort of cacheing scheme; render the
+data on the first request, cache it for subsequent requests, and flush it when
+new data arrives from the orb. This scheme would certainly work although it
+adds an awful lot of complexity to the application. Caching is notoriously
+difficult to get right. Add in the fact that some of our connections are
+long-lived and streaming live data and things go downhill fast.
 
-The other less traditional approach is to render data products to strings in
-response to packets from the orb rather than client requests. This approach is
-much simpler; no caching layer is required. It also simplifies the handler
-code, since by the time the handler executes all it has to do is lookup a
-string from somewhere; it need not be bothered with rendering anything. This
-approach requires substanially fewer lines of code.
+The other disadvantage to this approach is the fact that the model is taking
+some action on the data in response to packets off the orb ANYWAY, typically
+performing some processing and then storing it in objects until requested by a
+handler.
+
+The superior approach in this application is to render data products all the
+way to transport-writeable strings in response to packets from the orb. It's
+simple for the model to do and no caching is required. It also simplifies the
+handler code; all it must do is lookup a string-returning deferred from
+somewhere. This approach is much less complex and requires substanially fewer
+lines of code.
 
 The performance characteristics of this approach differ slightly. The load to
-render the data is relative to the volume of incoming data, which is
-roughly constant over periods of days and weeks. So even with zero clients the
-server is rendering everything all the time, and this may be seen as wasteful.
-In practice, the load this puts on the server is negligable, therefor doing
-anything to improve it would be a premature optimization.
+render the data is relative to the volume of incoming data, which is roughly
+constant over periods of days and weeks. So even with zero clients the server
+is rendering everything all the time, and this may be seen as wasteful.  In
+practice, the load this puts on the server is negligable. While it would be
+possible to implement some sort of scheme for only rendering data when clients
+are acively requesting it, that would be a premature optimization.
 
-Performance relative to the number of clients should be similar to the caching
-solution described previously. Again in practice, in a heavily used system with
-many clients, the rendering load will be negligable compared to the request
-handling load.
+Performance of pre-rendering relative to the number of clients should be
+similar to the caching solution described previously. Again in practice, in a
+heavily used system with many clients, the rendering load will be negligable
+compared to the request handling load.
+
 

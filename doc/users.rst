@@ -8,6 +8,7 @@ The backend provides a number of data resources. The underlying mechanics are
 uniform accross data resources, and as such they all support similar
 functionality.
 
+
 Data Formats
 ------------
 
@@ -18,6 +19,7 @@ will use for their applications.
 
 Format is specified by the file extension on the URL; e.g. ``.json`` or
 ``.html``.
+
 
 Access Methods
 --------------
@@ -35,6 +37,7 @@ http://anfwebapi.ucsd.edu/http/dlmon/instances/dlmon/status.json
 
 If you mix up the ws and http bits, the result is undefined.
 
+
 JSON Object Reference
 ---------------------
 
@@ -42,19 +45,33 @@ All json objects follow this pattern:
 
 ``{"class_name": { ... }}``
 
-``class_name`` may be the requested type, or may be an ``error`` object;
-clients should test this to gracefully handle error conditions.
+``class_name`` indicates the type of object which was returned.
 
-Error Object
-~~~~~~~~~~~~
 
-The error object may be returned by any query.
+Error Handling
+~~~~~~~~~~~~~~
 
-Example error object: ``{"error": {"msg": "Unknown Station: 'TA_Y22'", "code": 404}}`` 
+Queries may return an object(s) of the requested type(s) or may return an error
+object. Clients should test if class_name == ``error``.
 
-``msg`` contains a human readable message describing the error.
+As a defensive measure, clients may optionally verify that the received
+class_name matches the resource they requested. A mismatch would indicate a bug
+in the server, and is thus (hopefully) unlikely.
 
-``code`` contains an error code; codes are drawn from the HTTP specification.
+.. js:data:: error
+  Returned when an error has occured.
+
+.. js:attribute:: error.msg
+  Human readable string describing the error.
+
+.. js:attribute:: error.code
+  Integer error code; codes are drawn from the HTTP specification. 
+
+Example::
+
+  { "error": { "msg": "Unknown Station: 'TA_Y22'", 
+               "code": 404 }}
+
 
 Instance Status
 ~~~~~~~~~~~~~~~
@@ -63,6 +80,44 @@ Immediately returns full instance status in ``instance_status`` object. For
 async clients, such as WS, it then sends ``instance_update`` objects as packets
 arrive from the orb(s).
 
+Station Status
+~~~~~~~~~~~~~~
+
+Very similar to the Instance Status object, except returns data for only the specified station.
+
+.. js:data:: station_status
+
+  Status data for a single station.
+
+.. js:attribute:: station_status.name
+
+  The name of the station. It should match the name of the requested station,
+  and clients may verify this.
+
+.. js:attribute:: station_status.timestamp
+
+  The timestamp from the orb packet header. UTC seconds since UNIX epoch.
+
+.. js:attribute:: station_status.values
+
+  Contains the actual status data fields. For details, refer to the
+  documentation for the particular datalogger to orb program, e.g. q3302orb.
+
+Example::
+
+    {
+        "station_status": {
+            "name": "TA_Y22D", 
+            "timestamp": 1357929110.673179, 
+            "values": {
+                "aa": "0.011", 
+                "acok": 1, 
+                "api": 0, 
+                ...
+            }
+        }
+    }
+
 Instances
 ~~~~~~~~~
 
@@ -70,15 +125,18 @@ Immediately returns the which list of named DLMon
 instances. This is static at runtime so there's really no reason to query it
 more than once.
 
+
 Station List
 ~~~~~~~~~~~~
 
-Immediately sends the ``stations`` object, which full station list, the re-sends the station list whenever
-it changes.
+Immediately sends the ``stations`` object, which full station list, the
+re-sends the station list whenever it changes.
+
 
 Notes
 -----
 
-.. [*]  It's possible that other older websockets protocols are also supported
- but, seriously, just upgrade your browser.
+.. [*]  Other older websockets protocols may work but, seriously, upgrade your
+ browser.
+
 

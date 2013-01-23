@@ -8,16 +8,17 @@ from calendar import timegm
 from twisted.python import log
 
 from antelope import _stock
+from antelope import _brttpkt
 
 from kudu.exc import OrbIncomplete
-from kudu.twisted.orb import Orb
+from kudu.twisted.orb import OrbReapThread
 from kudu.pkt import Pkt
 
 
 pktno = 0
 
 
-class StatusPktSource(Orb):
+class StatusPktSource(OrbReapThread):
     """Represents a datalogger status data source, i.e. an orb."""
 
     def pfstring_to_pfdict(self, pfstring):
@@ -70,7 +71,9 @@ class StatusPktSource(Orb):
     def on_reap(self, r):
         """Orbreap callback method."""
         global pktno
-        pktid, srcname, timestamp, raw_packet, nbytes = r
+        rc, pktid, srcname, timestamp, raw_packet, nbytes = r
+        if rc != _brttpkt.ORBREAPTHR_OK:
+            raise OrbIncomplete()
         pktno += 1
         log.msg("%r reap pkt #%d: %d bytes" % (self.orbname, pktno, nbytes))
         # TODO Should this jazz be pushed down the callback chain?
@@ -87,7 +90,8 @@ class StatusPktSource(Orb):
         return updated_stations
 
     def reap_timeout(self, *args, **kwargs):
-        d = super(StatusPktSource, self).reap_timeout(*args, **kwargs)
+        # d = super(StatusPktSource, self).reap_timeout(*args, **kwargs)
+        d = self.get()
         d.addCallback(self.on_reap)
         return d
 

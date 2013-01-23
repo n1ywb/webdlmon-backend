@@ -43,17 +43,25 @@ instances &Arr{
 #     host1:orbname2
 #   }
 
-  dlmon &Arr{
-    anfexport:status 
+  ta &Arr{
+    anfexport:status
     anfexport:cascadia_status
   }
 
-  foo &Arr{
+  ta_prelim &Arr{
     anfexport:prelim
   }
 
-  bar &Arr{
-    anfexport:status
-    anfexport:prelim
+  chile &Arr{
+     anfops.ucsd.edu:chile_stat
+  }
+
+  glisn &Arr{
+      anfexport.ucsd.edu:6591
+  }
+
+  anza &Arr{
+      igpprt.ucsd.edu:status 
   }
 }
+

@@ -19,7 +19,7 @@ pktno = 0
 
 
 class StatusPktSource(OrbReapThread):
-    """Represents a datalogger status data source, i.e. an orb."""
+    """Represents a datalogger status data source, i.e. an orb reap thread."""
 
     def pfstring_to_pfdict(self, pfstring):
         """Return a dictionary from the 'string' field of a status packet which
@@ -68,8 +68,8 @@ class StatusPktSource(OrbReapThread):
         updated_stations['metadata']['timestamp'] = rx_timestamp
         return updated_stations
 
-    def on_reap(self, r):
-        """Orbreap callback method."""
+    def on_get(self, r):
+        """OrpReapThread.get callback method."""
         global pktno
         rc, pktid, srcname, timestamp, raw_packet, nbytes = r
         if rc != _brttpkt.ORBREAPTHR_OK:
@@ -89,9 +89,8 @@ class StatusPktSource(OrbReapThread):
         updated_stations = self.pfmorph(pfdict, timestamp)
         return updated_stations
 
-    def reap_timeout(self, *args, **kwargs):
-        # d = super(StatusPktSource, self).reap_timeout(*args, **kwargs)
+    def get(self):
         d = self.get()
-        d.addCallback(self.on_reap)
+        d.addCallback(self.on_get)
         return d
 

@@ -33,7 +33,7 @@ class Controller(object):
     def __init__(self, cfg, instances):
         self.cfg = cfg
         self.instances = instances
-        self._ws_factory = WebSocketServerFactory("ws://0.0.0.0:6999")
+        self._ws_factory = WebSocketServerFactory("ws://%s:%d" % (cfg.bind_address, cfg.port))
         self._ws_factory.protocol = RequestishProtocol
 
     def _error(self, request, format, code, msg):

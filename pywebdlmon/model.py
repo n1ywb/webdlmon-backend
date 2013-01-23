@@ -136,33 +136,26 @@ class Instance(DataObject):
         self.station_list = StationList(instance_name, cfg)
         self.instance_update = InstanceUpdate(instance_name, cfg)
         for source in sources:
-# TODO Fix async connect packet corruption issue.
-#            def on_connect(r):
-#                self.reap(source)
-#            d = source.connect()
-#            d.addCallback(on_connect)
             log.msg("connecting to src %r" % source)
-            # NOTE Using sync connect until we fix async connect
-            kudu.orb.Orb.connect(source)
             # NOTE this is handy for debugging but maybe not for production
             # source.seek(kudu.orb.ORBOLDEST)
-            self.reap(source)
+            self.get(source)
         super(Instance, self).__init__(cfg, *args, **kwargs)
 
-    def reap(self, source):
-        d = source.reap_timeout(REAP_TIMEOUT)
-        d.addCallbacks(self.on_reap, errback=self.on_reap_error,
+    def get(self, source):
+        d = source.get()
+        d.addCallbacks(self.on_get, errback=self.on_get_error,
                 callbackKeywords=dict(source=source),
                 errbackKeywords=dict(source=source), )
         return d
 
-    def on_reap_error(self, failure, source):
+    def on_get_error(self, failure, source):
         failure.trap(OrbIncomplete)
-        return self.reap(source)
+        return self.get(source)
 
-    def on_reap(self, pfdict, source):
+    def on_get(self, pfdict, source):
         r = self.update(pfdict)
-        self.reap(source)
+        self.get(source)
         return r
 
     def update(self, updated_stations):
@@ -184,7 +177,7 @@ class InstanceCollection(DataObject):
         super(InstanceCollection, self).__init__(cfg)
         instances = self.instances = {}
         for instance_name, srcs in cfg.instances.iteritems():
-            sources = [StatusPktSource(srcname, 'r', select=srccfg.match,
+            sources = [StatusPktSource(srcname, select=srccfg.match,
                                                      reject=srccfg.reject)
                         for srcname,srccfg in srcs.iteritems()]
             instance = Instance(instance_name, sources, cfg)

@@ -11,7 +11,7 @@ from antelope import _stock
 from antelope import _brttpkt
 
 from kudu.exc import OrbIncomplete
-from kudu.twisted.orb import OrbReapThread
+from kudu.twisted.orbreapthread import OrbReapThread
 from kudu.pkt import Pkt
 
 
@@ -90,7 +90,7 @@ class StatusPktSource(OrbReapThread):
         return updated_stations
 
     def get(self):
-        d = self.get()
+        d = super(StatusPktSource, self).get()
         d.addCallback(self.on_get)
         return d
 

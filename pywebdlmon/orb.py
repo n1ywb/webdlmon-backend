@@ -25,7 +25,7 @@ class StatusPktSource(OrbReapThread):
         """Return a dictionary from the 'string' field of a status packet which
         contains a parameter file."""
         pfstring = pfstring.strip('\0')
-        pfptr = _stock._pfnew()
+        pfptr = _stock._pfnew(_stock.PFARR)
         try:
             r = _stock._pfcompile(pfstring, pfptr)
             if r != 0: raise Exception("pfcompile failed")

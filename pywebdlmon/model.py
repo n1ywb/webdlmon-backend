@@ -6,9 +6,10 @@ from twisted.python import log
 
 from mako.exceptions import text_error_template
 
-from kudu.exc import OrbIncomplete
 from kudu.twisted.util import ObservableDict
-import kudu.orb
+
+from antelope.brttpkt import NoData, Timeout
+from antelope.orb import ORBOLDEST
 
 from pywebdlmon.orb import StatusPktSource
 
@@ -138,7 +139,7 @@ class Instance(DataObject):
         for source in sources:
             log.msg("connecting to src %r" % source)
             # NOTE this is handy for debugging but maybe not for production
-            # source.seek(kudu.orb.ORBOLDEST)
+            # source.seek(ORBOLDEST)
             self.get(source)
         super(Instance, self).__init__(cfg, *args, **kwargs)
 
@@ -150,7 +151,7 @@ class Instance(DataObject):
         return d
 
     def on_get_error(self, failure, source):
-        failure.trap(OrbIncomplete)
+        failure.trap(Timeout, NoData)
         return self.get(source)
 
     def on_get(self, pfdict, source):
@@ -177,9 +178,13 @@ class InstanceCollection(DataObject):
         super(InstanceCollection, self).__init__(cfg)
         instances = self.instances = {}
         for instance_name, srcs in cfg.instances.iteritems():
-            sources = [StatusPktSource(srcname, select=srccfg.match,
-                                                     reject=srccfg.reject)
-                        for srcname,srccfg in srcs.iteritems()]
+            sources = []
+            for (srcname, srccfg) in srcs.iteritems():
+                source = StatusPktSource(srcname, select=srccfg.match,
+                                                         reject=srccfg.reject,
+                                                         timeout=1)
+                source.orbname = srcname
+                sources.append(source)
             instance = Instance(instance_name, sources, cfg)
             instances[instance_name] = instance
             log.msg("New dlmon instance: %s" % instance_name)

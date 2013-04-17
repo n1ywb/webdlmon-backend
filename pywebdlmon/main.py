@@ -36,7 +36,7 @@ class App(object):
         # Somehow the websocket server needs to be commanded to send updated
         # state data.
         # Sending a keepalive might be good too
-        log.msg('Setup TCP port:')
+        log.msg('Listening on %s' % cfg.bind_address)
 
         reactor.listenTCP(cfg.port, website, interface=cfg.bind_address)
         log.msg('\t\t\t\t\t=> OK')

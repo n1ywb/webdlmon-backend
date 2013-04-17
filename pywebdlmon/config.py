@@ -13,7 +13,7 @@ from mako.lookup import TemplateLookup
 
 sys.path.append(os.environ['ANTELOPE'] + '/data/python')
 
-from antelope import _stock
+from antelope import stock
 
 
 DEFAULTS = dict(
@@ -63,14 +63,10 @@ class Config(object):
     """
 
     def __init__(self, options):
-        r, confpf = _stock._pfread(options.parameter_file)
-        if r < 0:
-            raise Exception("Failed to open configuration parameter file %s." %
-                    repr(options.parameter_file))
-
+        confpf = stock.pfread(options.parameter_file)
         [self.set_val(k, confpf, options) for k in DEFAULTS.iterkeys()]
         self.instances={}
-        instdict = _stock._pfget(confpf,'instances')
+        instdict = confpf['instances']
         for instname, instcfg in instdict.iteritems():
             sources = {}
             for srcname, srccfg in instcfg.iteritems():
@@ -97,9 +93,7 @@ class Config(object):
             except AttributeError:
                 pass
         if v is None:
-            v = _stock._pfget(pf,k)
-            if v is None or v == '':
-                v = DEFAULTS[k]
+            v = pf.get(k, DEFAULTS[k])
         try:
             v = int(v)
         except (ValueError, TypeError):

@@ -1,21 +1,12 @@
 # Source this to set the necessary env vars.
 
-# Kudu is our high-level wrapper for the Antelope API.
-export PYTHONPATH=$PYTHONPATH:$HOME/kudu
+antelope=/opt/antelope/5.3pre
 
-# StreamProx is a reverse proxy for Twisted which, among other things, lets our
-# web services and websockets services appear on the same port.
-export PYTHONPATH=$PYTHONPATH:$HOME/StreamProx
-
-# twisted websockets
-export PYTHONPATH=$PYTHONPATH:$HOME/txWS
-
-# Mako templates
-export PYTHONPATH=$PYTHONPATH:$HOME/Mako-0.7.3
-
-# txroutes
-export PYTHONPATH=$PYTHONPATH:$HOME/txroutes
+. $antelope/setup.sh
 
 # Config PF location
 export PFPATH=$PFPATH:`pwd`/etc
+export ANTELOPE_PYTHON_GILRELEASE=1
+
+. ../pydlmon-ve-new/bin/activate
 

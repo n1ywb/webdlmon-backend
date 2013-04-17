@@ -10,7 +10,6 @@ setup(
 
 
     install_requires = [
-                        'kudu', # High level Antelope API
                        ],
 
     # metadata for upload to PyPI

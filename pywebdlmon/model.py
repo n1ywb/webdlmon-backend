@@ -88,6 +88,20 @@ class InstanceStatus(DataObject):
         self.status = dict(metadata=dict(), dataloggers=dict())
         super(InstanceStatus, self).__init__(*args, **kwargs)
 
+    def since(self, pktno):
+        """Returns a non-updating copy with only data logger records received
+        since pktno."""
+        # It's sort of inefficient b/c it also makes a whole new suite of
+        # station objects; consider refactoring that code;
+        new_self = InstanceStatus(self.instance_name, self.cfg)
+        dataloggers = dict(((k,v) for (k,v) in self.status['dataloggers'].iteritems() if v['pktno'] > pktno))
+        updated_stations = {
+            'metadata': self.status['metadata'],
+            'dataloggers': dataloggers
+        }
+        new_self.update(updated_stations)
+        return new_self
+
     def update(self, updated_stations):
         # Do my own update
         # TODO Geoff wants this to be a list, not a dict, b/c javascript sucks

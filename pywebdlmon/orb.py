@@ -60,8 +60,11 @@ class StatusPktSource(OrbreapThr):
                         'name': stn,
                         'values': status,
                         'timestamp': timestamp,
+                        'rx_timestamp': rx_timestamp,
+                        'pktno': pktno,
                     }
         updated_stations['metadata']['timestamp'] = rx_timestamp
+        updated_stations['metadata']['pktno'] = pktno
         return updated_stations
 
     def on_get(self, r):

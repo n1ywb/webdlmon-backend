@@ -16,6 +16,7 @@ from mako import exceptions
 from pywebdlmon.model import UnknownInstance, UnknownStation, UnknownFormat
 from pywebdlmon import wsmagic
 from pywebdlmon.ws import RequestishProtocol
+from pywebdlmon import orb
 
 
 class UnknownTransport(Exception): pass
@@ -70,6 +71,8 @@ class Controller(object):
                 request.repeat = False
             try:
                 deferred = inner_func(self, request, format, transport, *args, **kwargs)
+                if deferred is server.NOT_DONE_YET:
+                    return deferred
             except UnknownInstance, e:
                 return self._error(request, format, 404, "Unknown DLMon Instance '%s'" % e)
             except UnknownStation, e:
@@ -133,6 +136,14 @@ class Controller(object):
         instance = self.instances.get_instance(instance)
         if request.repeat:
             deferred = instance.instance_update.get_format(format, immediate=is_sync(transport))
+        elif 'since' in request.args:
+            try:
+                since = int(request.args['since'][0])
+            except ValueError, e:
+                return self._error(request, format, 400, "Cannot convert since to int: '%s'" % e)
+            if since > orb.pktno:
+                return self._error(request, format, 400, "Since value in future: '%s'" % since)
+            deferred = instance.instance_status.since(since).get_format(format, immediate=True)
         else:
             # Send full status immediately.
             deferred = instance.instance_status.get_format(format, immediate=True)

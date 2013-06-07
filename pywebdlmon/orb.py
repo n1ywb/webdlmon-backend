@@ -8,7 +8,6 @@ from calendar import timegm
 from twisted.python import log
 
 from antelope import stock
-from antelope import _brttpkt
 
 from antelope.brttpkt import NoData
 from kudu.twisted.orbreapthread import OrbreapThr
@@ -63,7 +62,8 @@ class StatusPktSource(OrbreapThr):
                         'rx_timestamp': rx_timestamp,
                         'pktno': pktno,
                     }
-        updated_stations['metadata']['timestamp'] = rx_timestamp
+        updated_stations['metadata']['timestamp'] = timestamp
+        updated_stations['metadata']['rx_timestamp'] = rx_timestamp
         updated_stations['metadata']['pktno'] = pktno
         return updated_stations
 

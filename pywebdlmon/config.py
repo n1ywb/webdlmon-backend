@@ -11,8 +11,6 @@ import os
 
 from mako.lookup import TemplateLookup
 
-sys.path.append(os.environ['ANTELOPE'] + '/data/python')
-
 from antelope import stock
 
 

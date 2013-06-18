@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+from collections import defaultdict
 import json
 
 from twisted.python import log
@@ -58,7 +59,8 @@ class StationList(DataObject):
         self.stations=set()
         super(StationList, self).__init__(*args, **kwargs)
 
-    def update(self, updated_stations):
+    def update(self, updated_stations, dead_stations):
+        self.stations -= dead_stations
         self.stations |= set(updated_stations['dataloggers'].iterkeys())
         data = {'station_list': list(self.stations)}
         super(StationList, self).update(data, instance=self.instance_name)
@@ -102,9 +104,11 @@ class InstanceStatus(DataObject):
         new_self.update(updated_stations)
         return new_self
 
-    def update(self, updated_stations):
-        # Do my own update
-        # TODO Geoff wants this to be a list, not a dict, b/c javascript sucks
+    def update(self, updated_stations, dead_stations):
+        # prune dead stations
+        for stn in dead_stations:
+            del self.status['dataloggers'][stn]
+            del self.stations[stn]
         self.status['dataloggers'].update(updated_stations['dataloggers'])
         self.status['metadata'] = updated_stations['metadata']
         status = dict(metadata=self.status['metadata'], dataloggers=self.status['dataloggers'].values())
@@ -145,6 +149,7 @@ class Instance(DataObject):
     template_name = 'instance.html'
 
     def __init__(self, instance_name, sources, cfg, *args, **kwargs):
+        self.live_stations = defaultdict(set)
         self.instance_name = instance_name
         #self.status_update = StatusUpdate()
         self.instance_status = InstanceStatus(instance_name, cfg)
@@ -174,8 +179,14 @@ class Instance(DataObject):
         return r
 
     def update(self, updated_stations):
-        self.instance_status.update(updated_stations)
-        self.station_list.update(updated_stations)
+        # build list of dead stations to prune
+        srcname = updated_stations['metadata']['srcname']
+        live_stations = set([n for n in updated_stations['dataloggers'].iterkeys()])
+        dead_stations = self.live_stations[srcname] - live_stations
+        self.live_stations[srcname] = live_stations
+
+        self.instance_status.update(updated_stations, dead_stations)
+        self.station_list.update(updated_stations, dead_stations)
         self.instance_update.update(updated_stations)
         return
         # NOTE not sure yet what if any data instance should export. Probably

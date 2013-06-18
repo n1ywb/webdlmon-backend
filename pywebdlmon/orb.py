@@ -29,7 +29,7 @@ class StatusPktSource(OrbreapThr):
         pfdict = pfptr.pf2dict()
         return pfdict
 
-    def pfmorph(self, pfdict, timestamp):
+    def pfmorph(self, pfdict, timestamp, srcname):
         """Apply arcane transformations to incoming status data."""
         rx_timestamp = str(int(timegm(datetime.utcnow().utctimetuple())))
         # TODO Would it be more appropriate for this to live in model.py?
@@ -61,10 +61,12 @@ class StatusPktSource(OrbreapThr):
                         'timestamp': timestamp,
                         'rx_timestamp': rx_timestamp,
                         'pktno': pktno,
+                        'srcname': srcname,
                     }
         updated_stations['metadata']['timestamp'] = timestamp
         updated_stations['metadata']['rx_timestamp'] = rx_timestamp
         updated_stations['metadata']['pktno'] = pktno
+        updated_stations['metadata']['srcname'] = srcname
         return updated_stations
 
     def on_get(self, r):
@@ -84,7 +86,7 @@ class StatusPktSource(OrbreapThr):
             pfdict = self.pfstring_to_pfdict(pfstring)
         else:
             pfdict = packet.pf.pf2dict()
-        updated_stations = self.pfmorph(pfdict, timestamp)
+        updated_stations = self.pfmorph(pfdict, timestamp, srcname)
         return updated_stations
 
     def get(self):
